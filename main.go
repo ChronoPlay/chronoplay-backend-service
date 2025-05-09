@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/ChronoPlay/chronoplay-backend-service/config"
 	controller "github.com/ChronoPlay/chronoplay-backend-service/controllers"
 	"github.com/ChronoPlay/chronoplay-backend-service/database"
 	model "github.com/ChronoPlay/chronoplay-backend-service/models"
@@ -13,7 +12,7 @@ import (
 
 func main() {
 	database.Connect()
-	config.LoadEnv()
+	// config.LoadEnv()
 
 	db := database.DB
 
