@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 
-	"github.com/ChronoPlay/chronoplay-backend-service/database"
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 	model "github.com/ChronoPlay/chronoplay-backend-service/models"
@@ -11,7 +10,7 @@ import (
 )
 
 type UserService interface {
-	GetUser(context.Context, model.User) (model.User, *helpers.CustomEror)
+	GetUser(context.Context, model.User) (*model.User, *helpers.CustomEror)
 	RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomEror)
 }
 
@@ -25,9 +24,9 @@ func NewUserService(userRepo model.UserRepository) UserService {
 	}
 }
 
-func (s *userService) GetUser(ctx context.Context, req model.User) (resp model.User, err *helpers.CustomEror) {
+func (s *userService) GetUser(ctx context.Context, req model.User) (resp *model.User, err *helpers.CustomEror) {
 	if len(req.UserName) != 0 {
-		resp, err = s.userRepo.FindByUserName(req.UserName)
+		resp, err = s.userRepo.FindByUserName(ctx, req.UserName)
 	}
 	if err != nil {
 		return resp, err
@@ -41,22 +40,21 @@ func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *he
 		return err
 	}
 
-	tx := database.DB.Begin()
+	// Start session
+	session, derr := s.userRepo.GetCollection().Database().Client().StartSession()
+	if derr != nil {
+		return helpers.System("Failed to start session: " + derr.Error())
+	}
+	defer func() {
+		session.EndSession(ctx)
+	}()
 
 	req.Password, err = utils.HashPassword(req.Password)
 	if err != nil {
 		return err
 	}
 
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		} else {
-			tx.Commit()
-		}
-	}()
-
-	err = s.userRepo.RegisterUser(tx, req)
+	err = s.userRepo.RegisterUser(session.cont, req)
 	if err != nil {
 		return err
 	}

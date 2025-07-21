@@ -10,7 +10,7 @@ import (
 func DecodeRegisterUserRequest(r *gin.Context) (user model.User, err *helpers.CustomEror) {
 	jerr := r.BindJSON(&user)
 	if jerr != nil {
-		return model.User{}, err.BadRequest(jerr.Error())
+		return model.User{}, helpers.BadRequest(jerr.Error())
 	}
 	return user, nil
 }

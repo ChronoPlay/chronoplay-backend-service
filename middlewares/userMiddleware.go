@@ -24,16 +24,16 @@ func NewUserMiddleware(next service.UserService) UserMiddleware {
 	}
 }
 
-func (mw userMiddleware) GetUser(ctx context.Context, req model.User) (resp model.User, err *helpers.CustomEror) {
+func (mw userMiddleware) GetUser(ctx context.Context, req model.User) (resp *model.User, err *helpers.CustomEror) {
 	defer func(begin time.Time) {
 		log.Printf("ctx", ctx, " method:", "GetUser", " req:", req, " took:", time.Since(begin), " err:", err.Message, " resp:", resp)
 	}(time.Now())
 	return mw.next.GetUser(ctx, req)
 }
 
-func (mw userMiddleware) RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomEror) {
+func (mw userMiddleware) RegisterUser(sessCtx mongo.SessionContext, req User) (err *helpers.CustomEror) {
 	defer func(begin time.Time) {
-		log.Printf("ctx", ctx, " method:", "RegisterUser", " req:", req, " took:", time.Since(begin), " err:", err.Message)
+		log.Printf("ctx", sessCtx, " method:", "RegisterUser", " req:", req, " took:", time.Since(begin), " err:", err.Message)
 	}(time.Now())
-	return mw.next.RegisterUser(ctx, req)
+	return mw.next.RegisterUser(sessCtx, req)
 }

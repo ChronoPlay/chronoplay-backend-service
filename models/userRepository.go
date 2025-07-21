@@ -1,56 +1,69 @@
 package model
 
 import (
+	"context"
 	"time"
 
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 )
 
 type User struct {
-	ID           uint      `gorm:"primaryKey;autoIncrement"`
-	Name         string    `gorm:"type:varchar(100);not null"`
-	Email        string    `gorm:"type:varchar(100);uniqueIndex;not null"`
-	Password     string    `gorm:"type:varchar(255);not null"`
-	UserName     string    `gorm:"type:varchar(50);uniqueIndex;not null"`
-	PhoneNumber  string    `gorm:"type:varchar(15);uniqueIndex;not null"`
-	Cash         uint32    `gorm:"default:0"`
-	Bronze       uint32    `gorm:"default:0"`
-	Silver       uint32    `gorm:"default:0"`
-	Gold         uint32    `gorm:"default:0"`
-	IsAuthorized bool      `gorm:"default:false"`
-	CreatedAt    time.Time `gorm:"autoCreateTime"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
-}
-
-func (User) TableName() string {
-	return "users"
-}
-
-type mysqlUserRepo struct {
-	db *gorm.DB
+	ID           primitive.ObjectID `bson:"_id,omitempty"`
+	Name         string             `bson:"name"`
+	Email        string             `bson:"email"`
+	Password     string             `bson:"password"`
+	UserName     string             `bson:"username"`
+	PhoneNumber  string             `bson:"phone_number"`
+	Cash         uint32             `bson:"cash"`
+	Bronze       uint32             `bson:"bronze"`
+	Silver       uint32             `bson:"silver"`
+	Gold         uint32             `bson:"gold"`
+	IsAuthorized bool               `bson:"is_authorized"`
+	CreatedAt    time.Time          `bson:"created_at"`
+	UpdatedAt    time.Time          `bson:"updated_at"`
 }
 
 type UserRepository interface {
-	FindByUserName(username string) (User, *helpers.CustomEror)
-	RegisterUser(tx *gorm.DB, user User) (err *helpers.CustomEror)
+	FindByUserName(ctx context.Context, username string) (*User, *helpers.CustomEror)
+	RegisterUser(sessCtx mongo.SessionContext, user User) *helpers.CustomEror
+	GetCollection() *mongo.Collection
 }
 
-func NewUserRepository(db *gorm.DB) UserRepository {
-	return &mysqlUserRepo{
-		db: db,
+type mongoUserRepo struct {
+	collection *mongo.Collection
+}
+
+func NewUserRepository(col *mongo.Collection) UserRepository {
+	return &mongoUserRepo{collection: col}
+}
+
+func (repo *mongoUserRepo) FindByUserName(ctx context.Context, userName string) (*User, *helpers.CustomEror) {
+	var user User
+	err := repo.collection.FindOne(ctx, bson.M{"username": userName}).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, helpers.NotFound("user not found")
+		}
+		return nil, helpers.System(err.Error())
 	}
+	return &user, nil
 }
 
-func (repo *mysqlUserRepo) FindByUserName(userName string) (user User, err *helpers.CustomEror) {
-	return
-}
+func (repo *mongoUserRepo) RegisterUser(sessCtx mongo.SessionContext, user User) *helpers.CustomEror {
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
 
-func (repo *mysqlUserRepo) RegisterUser(tx *gorm.DB, user User) (err *helpers.CustomEror) {
-	derr := repo.db.Create(user).Error
-	if derr != nil {
-		return err.System(derr.Error())
+	_, err := repo.collection.InsertOne(sessCtx, user)
+	if err != nil {
+		return helpers.System(err.Error())
 	}
 	return nil
+}
+
+func (r *mongoUserRepo) GetCollection() *mongo.Collection {
+	return r.collection
 }
