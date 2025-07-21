@@ -15,7 +15,7 @@ var MongoClient *mongo.Client
 func ConnectMongo() {
 	uri := os.Getenv("MONGODB_URI")
 	if uri == "" {
-		log.Fatal("MONGODB_URI not found in environment")
+		log.Fatal("MONGODB_URI not found in environment...")
 	}
 
 	clientOptions := options.Client().ApplyURI(uri)
