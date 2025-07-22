@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"net/smtp"
 	"os"
@@ -21,9 +22,10 @@ func SendEmail(to []string, subject, body string) (err *helpers.CustomEror) {
 
 	auth := smtp.PlainAuth("", from, password, smtpHost)
 
+	fmt.Println("EMail credentials: smtpHost: ", smtpHost, " auth: ", auth, " from: ", from, " to: ", to, " message: ", message)
 	serr := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
 	if serr != nil {
-		return err.System(serr.Error())
+		return helpers.System(serr.Error())
 	}
 
 	log.Println("Email sent successfully")

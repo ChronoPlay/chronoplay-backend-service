@@ -1,6 +1,9 @@
 package mapper
 
 import (
+	"encoding/json"
+	"log"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
@@ -8,9 +11,14 @@ import (
 )
 
 func DecodeRegisterUserRequest(r *gin.Context) (user model.User, err *helpers.CustomEror) {
-	jerr := r.BindJSON(&user)
-	if jerr != nil {
-		return model.User{}, helpers.BadRequest(jerr.Error())
+	if err := r.ShouldBindJSON(&user); err != nil {
+		return model.User{}, helpers.BadRequest("Invalid request: " + err.Error())
 	}
+
+	// Log the final parsed user
+	if bytes, _ := json.Marshal(user); bytes != nil {
+		log.Println("Parsed user:", string(bytes))
+	}
+
 	return user, nil
 }

@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/constants"
@@ -32,19 +34,22 @@ func (ctl *userController) GetUser(c *gin.Context) {
 }
 
 func (ctl *userController) RegisterUser(c *gin.Context) {
+	fmt.Print("request has reached here - userController")
 	user, err := mapper.DecodeRegisterUserRequest(c)
 	if err != nil {
 		c.JSON(int(err.Code), constants.JsonResp{
-			Messgae: err.Message,
+			Message: err.Message,
 		})
+		return
 	}
 
 	ctx := c.Request.Context()
 	err = ctl.userService.RegisterUser(ctx, user)
 	if err != nil {
 		c.JSON(int(err.Code), constants.JsonResp{
-			Messgae: err.Message,
+			Message: err.Message,
 		})
+		return
 	}
 	c.JSON(200, constants.JsonResp{
 		Data: "",

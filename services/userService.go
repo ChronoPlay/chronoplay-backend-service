@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"log"
+
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
@@ -33,37 +36,47 @@ func (s *userService) GetUser(ctx context.Context, req model.User) (resp *model.
 	}
 	return resp, nil
 }
-
 func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomEror) {
 	err = utils.ValidateUser(req)
 	if err != nil {
 		return err
 	}
 
-	// Start session
+	log.Println("Entered here - RegisterUser (userService)")
 	session, derr := s.userRepo.GetCollection().Database().Client().StartSession()
 	if derr != nil {
 		return helpers.System("Failed to start session: " + derr.Error())
 	}
-	defer func() {
-		session.EndSession(ctx)
-	}()
+	defer session.EndSession(ctx)
+	log.Println("Successfully created session")
 
-	req.Password, err = utils.HashPassword(req.Password)
-	if err != nil {
-		return err
-	}
+	merr := mongo.WithSession(ctx, session, func(sessCtx mongo.SessionContext) error {
+		// You can use sessCtx instead of ctx for transactional operations
 
-	err = s.userRepo.RegisterUser(session.cont, req)
-	if err != nil {
-		return err
-	}
+		req.Password, err = utils.HashPassword(req.Password)
+		if err != nil {
+			return err // Will abort the transaction
+		}
 
-	emailVerificationLink := ""
-	err = utils.SendEmailToUser(dto.EmailVerificationRequest{
-		Email:    req.Email,
-		UserName: req.UserName,
-		Link:     emailVerificationLink,
+		// Call repository method with sessCtx
+		err = s.userRepo.RegisterUser(sessCtx, req)
+		if err != nil {
+			return err
+		}
+
+		emailVerificationLink := "" // Ideally generate a real one
+		err = utils.SendEmailToUser(dto.EmailVerificationRequest{
+			Email:    req.Email,
+			UserName: req.UserName,
+			Link:     emailVerificationLink,
+		})
+
+		return err // Will commit if nil
 	})
+
+	if merr != nil {
+		return helpers.System("Transaction failed: " + merr.Error())
+	}
+
 	return nil
 }

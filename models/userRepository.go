@@ -12,19 +12,19 @@ import (
 )
 
 type User struct {
-	ID           primitive.ObjectID `bson:"_id,omitempty"`
-	Name         string             `bson:"name"`
-	Email        string             `bson:"email"`
-	Password     string             `bson:"password"`
-	UserName     string             `bson:"username"`
-	PhoneNumber  string             `bson:"phone_number"`
-	Cash         uint32             `bson:"cash"`
-	Bronze       uint32             `bson:"bronze"`
-	Silver       uint32             `bson:"silver"`
-	Gold         uint32             `bson:"gold"`
-	IsAuthorized bool               `bson:"is_authorized"`
-	CreatedAt    time.Time          `bson:"created_at"`
-	UpdatedAt    time.Time          `bson:"updated_at"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name         string             `bson:"name" json:"name"`
+	Email        string             `bson:"email" json:"email"`
+	Password     string             `bson:"password" json:"password"`
+	UserName     string             `bson:"username" json:"username"`
+	PhoneNumber  string             `bson:"phone_number" json:"phone_number"`
+	Cash         uint32             `bson:"cash" json:"cash"`
+	Bronze       uint32             `bson:"bronze" json:"bronze"`
+	Silver       uint32             `bson:"silver" json:"silver"`
+	Gold         uint32             `bson:"gold" json:"gold"`
+	IsAuthorized bool               `bson:"is_authorized" json:"is_authorized"`
+	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
+	UpdatedAt    time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
 type UserRepository interface {

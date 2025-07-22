@@ -6,7 +6,11 @@ type CustomEror struct {
 }
 
 func (e *CustomEror) Error() string {
-	return e.Message
+	if e != nil {
+		return e.Message
+	} else {
+		return "Unknow error"
+	}
 }
 
 func System(msg string) *CustomEror {

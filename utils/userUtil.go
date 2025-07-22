@@ -15,22 +15,22 @@ import (
 
 func ValidateUser(user model.User) (err *helpers.CustomEror) {
 	if len(strings.TrimSpace(user.UserName)) == 0 {
-		return err.BadRequest("username is required")
+		return helpers.BadRequest("username is required")
 	}
 	if len(strings.TrimSpace(user.Name)) == 0 {
-		return err.BadRequest("name is required")
+		return helpers.BadRequest("name is required")
 	}
 	if len(strings.TrimSpace(user.Email)) == 0 {
-		return err.BadRequest("email is required")
+		return helpers.BadRequest("email is required")
 	}
 	if !isValidEmail(user.Email) {
-		return err.BadRequest("invalid email format")
+		return helpers.BadRequest("invalid email format")
 	}
 	if len(strings.TrimSpace(user.Password)) < 6 {
-		return err.BadRequest("password must be at least 6 characters")
+		return helpers.BadRequest("password must be at least 6 characters")
 	}
 	if len(strings.TrimSpace(user.PhoneNumber)) < 10 {
-		return err.BadRequest("phone number is too short")
+		return helpers.BadRequest("phone number is too short")
 	}
 	return nil
 }
@@ -42,16 +42,18 @@ func isValidEmail(email string) bool {
 
 func SendEmailToUser(req dto.EmailVerificationRequest) (err *helpers.CustomEror) {
 	if !isValidEmail(req.Email) {
-		return err.BadRequest("invalid email format")
+		return helpers.BadRequest("invalid email format")
 	}
 
 	subject := "Email verification for chronoplay"
 	body := GenerateVerificationEmailBody(req.Link, req.UserName)
 
+	fmt.Println("Sending mail now....")
 	err = SendEmail([]string{req.Email}, subject, body)
 	if err != nil {
 		return err
 	}
+	fmt.Println("Mail sent for verification suceesfully...")
 
 	return nil
 }
@@ -82,7 +84,7 @@ func GenrateEmailVerificationLink(email string) string {
 func HashPassword(password string) (hashedPassword string, err *helpers.CustomEror) {
 	bytes, gerr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if gerr != nil {
-		return "", err.System("error while hashing password: " + gerr.Error())
+		return "", helpers.System("error while hashing password: " + gerr.Error())
 	}
 	return string(bytes), nil
 }
