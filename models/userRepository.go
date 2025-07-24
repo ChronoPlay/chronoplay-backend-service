@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,6 +14,7 @@ import (
 
 type User struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserId       uint32             `bson:"user_id" json:"user_id"`
 	Name         string             `bson:"name" json:"name"`
 	Email        string             `bson:"email" json:"email"`
 	Password     string             `bson:"password" json:"password"`
@@ -31,6 +33,8 @@ type UserRepository interface {
 	FindByUserName(ctx context.Context, username string) (*User, *helpers.CustomEror)
 	RegisterUser(sessCtx mongo.SessionContext, user User) *helpers.CustomEror
 	GetCollection() *mongo.Collection
+	GetUsers(ctx context.Context, req User) ([]User, *helpers.CustomEror)
+	UpdateUser(ctx context.Context, user User) *helpers.CustomEror
 }
 
 type mongoUserRepo struct {
@@ -57,7 +61,12 @@ func (repo *mongoUserRepo) RegisterUser(sessCtx mongo.SessionContext, user User)
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
-	_, err := repo.collection.InsertOne(sessCtx, user)
+	userId, err := GetNextSequence(sessCtx, repo.collection.Database(), COUNTER_ID_USER_ID)
+	if err != nil {
+		return helpers.System(err.Error())
+	}
+	user.UserId = uint32(userId)
+	_, err = repo.collection.InsertOne(sessCtx, user)
 	if err != nil {
 		return helpers.System(err.Error())
 	}
@@ -66,4 +75,65 @@ func (repo *mongoUserRepo) RegisterUser(sessCtx mongo.SessionContext, user User)
 
 func (r *mongoUserRepo) GetCollection() *mongo.Collection {
 	return r.collection
+}
+
+func (r *mongoUserRepo) UpdateUser(ctx context.Context, user User) *helpers.CustomEror {
+	user.UpdatedAt = time.Now()
+
+	_, err := r.collection.UpdateByID(ctx, user.ID, user)
+	if err != nil {
+		return helpers.System(err.Error())
+	}
+	return nil
+}
+
+func (r *mongoUserRepo) GetUsers(ctx context.Context, req User) ([]User, *helpers.CustomEror) {
+	users := []User{}
+	isValid := false
+	conditions := []bson.M{}
+	if req.ID != primitive.NilObjectID {
+		conditions = append(conditions, bson.M{
+			"_id": req.ID,
+		})
+		isValid = true
+	}
+	if req.UserName != "" {
+		conditions = append(conditions, bson.M{
+			"user_name": req.UserName,
+		})
+		isValid = true
+	}
+	if req.Email != "" {
+		conditions = append(conditions, bson.M{
+			"email": req.Email,
+		})
+		isValid = true
+	}
+
+	if isValid {
+		filter := bson.M{}
+		if len(conditions) > 0 {
+			filter["$and"] = conditions
+		}
+		cursor, err := r.collection.Find(ctx, filter)
+		if err != nil {
+			return users, helpers.System(err.Error())
+		}
+
+		defer cursor.Close(ctx)
+
+		for cursor.Next(ctx) {
+			var user User
+			if err := cursor.Decode(&user); err != nil {
+				log.Println("Decode error:", err)
+				continue
+			}
+			users = append(users, user)
+		}
+
+		if err := cursor.Err(); err != nil {
+			return users, helpers.System(err.Error())
+		}
+	}
+	return users, nil
 }

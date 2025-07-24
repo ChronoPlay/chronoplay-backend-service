@@ -15,6 +15,7 @@ import (
 type UserService interface {
 	GetUser(context.Context, model.User) (*model.User, *helpers.CustomEror)
 	RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomEror)
+	VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomEror)
 }
 
 type userService struct {
@@ -36,11 +37,15 @@ func (s *userService) GetUser(ctx context.Context, req model.User) (resp *model.
 	}
 	return resp, nil
 }
+
 func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomEror) {
 	err = utils.ValidateUser(req)
 	if err != nil {
 		return err
 	}
+
+	// user will be unverified in begining
+	req.IsAuthorized = false
 
 	log.Println("Entered here - RegisterUser (userService)")
 	session, derr := s.userRepo.GetCollection().Database().Client().StartSession()
@@ -52,6 +57,17 @@ func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *he
 
 	merr := mongo.WithSession(ctx, session, func(sessCtx mongo.SessionContext) error {
 		// You can use sessCtx instead of ctx for transactional operations
+
+		existingUsers, err := s.userRepo.GetUsers(sessCtx, model.User{
+			UserName: req.UserName,
+			Email:    req.Email,
+		})
+		if err != nil {
+			return err
+		}
+		if len(existingUsers) != 0 {
+			return helpers.BadRequest("User exists with given userName or emailId")
+		}
 
 		req.Password, err = utils.HashPassword(req.Password)
 		if err != nil {
@@ -78,5 +94,30 @@ func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *he
 		return helpers.System("Transaction failed: " + merr.Error())
 	}
 
+	return nil
+}
+
+func (s *userService) VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomEror) {
+	if req.UserId == 0 {
+		return helpers.BadRequest("User id is required")
+	}
+	user := model.User{
+		UserId: req.UserId,
+	}
+	existingUsers, err := s.userRepo.GetUsers(ctx, user)
+	if err != nil {
+		return helpers.System(err.Error())
+	}
+	if len(existingUsers) == 0 {
+		return helpers.BadRequest("No existing user present for this user id")
+	}
+
+	existingUser := existingUsers[0]
+	existingUser.IsAuthorized = true
+
+	err = s.userRepo.UpdateUser(ctx, existingUser)
+	if err != nil {
+		return helpers.System(err.Error())
+	}
 	return nil
 }

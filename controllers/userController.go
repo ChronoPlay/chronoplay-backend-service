@@ -18,6 +18,7 @@ type userController struct {
 type UserController interface {
 	GetUser(*gin.Context)
 	RegisterUser(*gin.Context)
+	VerifyUser(*gin.Context)
 }
 
 func NewUserController(userService service.UserService) UserController {
@@ -53,5 +54,27 @@ func (ctl *userController) RegisterUser(c *gin.Context) {
 	}
 	c.JSON(200, constants.JsonResp{
 		Data: "",
+	})
+}
+
+func (ctl *userController) VerifyUser(c *gin.Context) {
+	req, err := mapper.DecodeVerifyUserRequest(c)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	ctx := c.Request.Context()
+	err = ctl.userService.VerifyUser(ctx, req)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	c.JSON(200, constants.JsonResp{
+		Data:    "",
+		Message: "User successfully verified",
 	})
 }

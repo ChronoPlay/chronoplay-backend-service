@@ -37,3 +37,10 @@ func (mw userMiddleware) RegisterUser(ctx context.Context, req model.User) (err 
 	}(time.Now())
 	return mw.next.RegisterUser(ctx, req)
 }
+
+func (mw userMiddleware) VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomEror) {
+	defer func(begin time.Time) {
+		log.Printf("ctx:", ctx, " method:", "RegisterUser", " req:", req, " took:", time.Since(begin), " err:", err)
+	}(time.Now())
+	return mw.next.VerifyUser(ctx, req)
+}
