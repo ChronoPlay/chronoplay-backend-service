@@ -9,7 +9,7 @@ import (
 
 	controllers "github.com/ChronoPlay/chronoplay-backend-service/controllers"
 	"github.com/ChronoPlay/chronoplay-backend-service/database"
-	models "github.com/ChronoPlay/chronoplay-backend-service/models"
+	models "github.com/ChronoPlay/chronoplay-backend-service/model"
 	"github.com/ChronoPlay/chronoplay-backend-service/routes"
 	services "github.com/ChronoPlay/chronoplay-backend-service/services"
 )

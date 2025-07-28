@@ -16,6 +16,6 @@ func SetupRoutes(r *gin.Engine, userController controller.UserController) {
 	{
 		auth.POST("/signup", userController.RegisterUser)
 		auth.GET("/user", userController.GetUser)
-		auth.POST("/verify", userController.VerifyUser)
+		auth.GET("/verify", userController.VerifyUser)
 	}
 }

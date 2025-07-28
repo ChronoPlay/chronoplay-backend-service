@@ -16,13 +16,19 @@ func SendEmail(to []string, subject, body string) (err *helpers.CustomEror) {
 	smtpHost := os.Getenv("EMAIL_HOST")
 	smtpPort := os.Getenv("EMAIL_PORT")
 
-	message := []byte("Subject: " + subject + "\r\n" +
-		"\r\n" +
-		body + "\r\n")
+	// Headers + Body (HTML enabled)
+	message := []byte(
+		"From: " + from + "\r\n" +
+			"To: " + to[0] + "\r\n" +
+			"Subject: " + subject + "\r\n" +
+			"MIME-version: 1.0;\r\n" +
+			"Content-Type: text/html; charset=\"UTF-8\";\r\n\r\n" +
+			body + "\r\n")
 
 	auth := smtp.PlainAuth("", from, password, smtpHost)
 
-	fmt.Println("EMail credentials: smtpHost: ", smtpHost, " auth: ", auth, " from: ", from, " to: ", to, " message: ", message)
+	fmt.Println("Email credentials: smtpHost:", smtpHost, "from:", from, "to:", to)
+
 	serr := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
 	if serr != nil {
 		return helpers.System(serr.Error())

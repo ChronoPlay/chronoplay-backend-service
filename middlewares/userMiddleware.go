@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
-	model "github.com/ChronoPlay/chronoplay-backend-service/models"
+	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 	service "github.com/ChronoPlay/chronoplay-backend-service/services"
 )
 

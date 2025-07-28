@@ -10,7 +10,7 @@ import (
 
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
-	model "github.com/ChronoPlay/chronoplay-backend-service/models"
+	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 )
 
 func ValidateUser(user model.User) (err *helpers.CustomEror) {
@@ -60,24 +60,28 @@ func SendEmailToUser(req dto.EmailVerificationRequest) (err *helpers.CustomEror)
 
 func GenerateVerificationEmailBody(verificationLink string, userName string) string {
 	return fmt.Sprintf(`
-Hello %s,
+<html>
+<body>
+<p>Hello %s,</p>
 
-Thanks for registering with us!
+<p>Thanks for registering with us!</p>
 
-Please verify your email address by clicking the button below:
+<p>Please verify your email address by clicking the link below:</p>
 
-🔗 Verify Email: %s
+<p><a href="%s" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Verify Email</a></p>
 
-If you didn't request this, you can safely ignore this email.
+<p>If you didn't request this, you can safely ignore this email.</p>
 
-Best regards,  
-The ChronoPlay Team
+<p>Best regards,<br>
+The ChronoPlay Team</p>
+</body>
+</html>
 `, userName, verificationLink)
 }
 
 func GenrateEmailVerificationLink(email string) string {
 	baseUrl := os.Getenv("BASE_URL")
-	link := fmt.Sprintf(`%s/verifyEmail?email=%s`, baseUrl, email)
+	link := fmt.Sprintf(`%s/auth/verify?email=%s`, baseUrl, email)
 	return link
 }
 

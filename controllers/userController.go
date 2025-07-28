@@ -7,7 +7,7 @@ import (
 
 	"github.com/ChronoPlay/chronoplay-backend-service/constants"
 	"github.com/ChronoPlay/chronoplay-backend-service/mapper"
-	model "github.com/ChronoPlay/chronoplay-backend-service/models"
+	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 	service "github.com/ChronoPlay/chronoplay-backend-service/services"
 )
 
@@ -53,7 +53,8 @@ func (ctl *userController) RegisterUser(c *gin.Context) {
 		return
 	}
 	c.JSON(200, constants.JsonResp{
-		Data: "",
+		Data:    "",
+		Message: "User registered successfully. Checkout your mail to verify your emailId",
 	})
 }
 

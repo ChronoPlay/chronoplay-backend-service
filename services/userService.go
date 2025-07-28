@@ -8,7 +8,7 @@ import (
 
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
-	model "github.com/ChronoPlay/chronoplay-backend-service/models"
+	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 	"github.com/ChronoPlay/chronoplay-backend-service/utils"
 )
 
@@ -75,41 +75,44 @@ func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *he
 		}
 
 		// Call repository method with sessCtx
-		err = s.userRepo.RegisterUser(sessCtx, req)
+		_, err = s.userRepo.RegisterUser(sessCtx, req)
 		if err != nil {
 			return err
 		}
 
-		emailVerificationLink := "" // Ideally generate a real one
-		err = utils.SendEmailToUser(dto.EmailVerificationRequest{
-			Email:    req.Email,
-			UserName: req.UserName,
-			Link:     emailVerificationLink,
-		})
-
-		return err // Will commit if nil
+		return nil // Will commit if nil
 	})
 
 	if merr != nil {
 		return helpers.System("Transaction failed: " + merr.Error())
 	}
 
+	emailVerificationLink := utils.GenrateEmailVerificationLink(req.Email)
+	err = utils.SendEmailToUser(dto.EmailVerificationRequest{
+		Email:    req.Email,
+		UserName: req.UserName,
+		Link:     emailVerificationLink,
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (s *userService) VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomEror) {
-	if req.UserId == 0 {
-		return helpers.BadRequest("User id is required")
+	if req.Email == "" {
+		return helpers.BadRequest("Email is required")
 	}
 	user := model.User{
-		UserId: req.UserId,
+		Email: req.Email,
 	}
 	existingUsers, err := s.userRepo.GetUsers(ctx, user)
 	if err != nil {
 		return helpers.System(err.Error())
 	}
 	if len(existingUsers) == 0 {
-		return helpers.BadRequest("No existing user present for this user id")
+		return helpers.BadRequest("No existing user present for this email")
 	}
 
 	existingUser := existingUsers[0]

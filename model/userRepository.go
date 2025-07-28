@@ -31,7 +31,7 @@ type User struct {
 
 type UserRepository interface {
 	FindByUserName(ctx context.Context, username string) (*User, *helpers.CustomEror)
-	RegisterUser(sessCtx mongo.SessionContext, user User) *helpers.CustomEror
+	RegisterUser(sessCtx mongo.SessionContext, user User) (uint32, *helpers.CustomEror)
 	GetCollection() *mongo.Collection
 	GetUsers(ctx context.Context, req User) ([]User, *helpers.CustomEror)
 	UpdateUser(ctx context.Context, user User) *helpers.CustomEror
@@ -57,20 +57,20 @@ func (repo *mongoUserRepo) FindByUserName(ctx context.Context, userName string) 
 	return &user, nil
 }
 
-func (repo *mongoUserRepo) RegisterUser(sessCtx mongo.SessionContext, user User) *helpers.CustomEror {
+func (repo *mongoUserRepo) RegisterUser(sessCtx mongo.SessionContext, user User) (uint32, *helpers.CustomEror) {
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
 	userId, err := GetNextSequence(sessCtx, repo.collection.Database(), COUNTER_ID_USER_ID)
 	if err != nil {
-		return helpers.System(err.Error())
+		return 0, helpers.System(err.Error())
 	}
 	user.UserId = uint32(userId)
 	_, err = repo.collection.InsertOne(sessCtx, user)
 	if err != nil {
-		return helpers.System(err.Error())
+		return 0, helpers.System(err.Error())
 	}
-	return nil
+	return user.UserId, nil
 }
 
 func (r *mongoUserRepo) GetCollection() *mongo.Collection {
@@ -80,7 +80,23 @@ func (r *mongoUserRepo) GetCollection() *mongo.Collection {
 func (r *mongoUserRepo) UpdateUser(ctx context.Context, user User) *helpers.CustomEror {
 	user.UpdatedAt = time.Now()
 
-	_, err := r.collection.UpdateByID(ctx, user.ID, user)
+	// Convert struct to bson.M
+	updateData, err := bson.Marshal(user)
+	if err != nil {
+		return helpers.System("failed to marshal user: " + err.Error())
+	}
+
+	var updateDoc bson.M
+	if err := bson.Unmarshal(updateData, &updateDoc); err != nil {
+		return helpers.System("failed to unmarshal user: " + err.Error())
+	}
+
+	// Wrap in $set
+	update := bson.M{
+		"$set": updateDoc,
+	}
+
+	_, err = r.collection.UpdateByID(ctx, user.ID, update)
 	if err != nil {
 		return helpers.System(err.Error())
 	}
@@ -91,6 +107,12 @@ func (r *mongoUserRepo) GetUsers(ctx context.Context, req User) ([]User, *helper
 	users := []User{}
 	isValid := false
 	conditions := []bson.M{}
+	if req.UserId != 0 {
+		conditions = append(conditions, bson.M{
+			"user_id": req.UserId,
+		})
+		isValid = true
+	}
 	if req.ID != primitive.NilObjectID {
 		conditions = append(conditions, bson.M{
 			"_id": req.ID,
