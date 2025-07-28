@@ -10,27 +10,27 @@ import (
 
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
-	model "github.com/ChronoPlay/chronoplay-backend-service/models"
+	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 )
 
 func ValidateUser(user model.User) (err *helpers.CustomEror) {
 	if len(strings.TrimSpace(user.UserName)) == 0 {
-		return err.BadRequest("username is required")
+		return helpers.BadRequest("username is required")
 	}
 	if len(strings.TrimSpace(user.Name)) == 0 {
-		return err.BadRequest("name is required")
+		return helpers.BadRequest("name is required")
 	}
 	if len(strings.TrimSpace(user.Email)) == 0 {
-		return err.BadRequest("email is required")
+		return helpers.BadRequest("email is required")
 	}
 	if !isValidEmail(user.Email) {
-		return err.BadRequest("invalid email format")
+		return helpers.BadRequest("invalid email format")
 	}
 	if len(strings.TrimSpace(user.Password)) < 6 {
-		return err.BadRequest("password must be at least 6 characters")
+		return helpers.BadRequest("password must be at least 6 characters")
 	}
 	if len(strings.TrimSpace(user.PhoneNumber)) < 10 {
-		return err.BadRequest("phone number is too short")
+		return helpers.BadRequest("phone number is too short")
 	}
 	return nil
 }
@@ -42,47 +42,53 @@ func isValidEmail(email string) bool {
 
 func SendEmailToUser(req dto.EmailVerificationRequest) (err *helpers.CustomEror) {
 	if !isValidEmail(req.Email) {
-		return err.BadRequest("invalid email format")
+		return helpers.BadRequest("invalid email format")
 	}
 
 	subject := "Email verification for chronoplay"
 	body := GenerateVerificationEmailBody(req.Link, req.UserName)
 
+	fmt.Println("Sending mail now....")
 	err = SendEmail([]string{req.Email}, subject, body)
 	if err != nil {
 		return err
 	}
+	fmt.Println("Mail sent for verification suceesfully...")
 
 	return nil
 }
 
 func GenerateVerificationEmailBody(verificationLink string, userName string) string {
 	return fmt.Sprintf(`
-Hello %s,
+<html>
+<body>
+<p>Hello %s,</p>
 
-Thanks for registering with us!
+<p>Thanks for registering with us!</p>
 
-Please verify your email address by clicking the button below:
+<p>Please verify your email address by clicking the link below:</p>
 
-🔗 Verify Email: %s
+<p><a href="%s" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Verify Email</a></p>
 
-If you didn't request this, you can safely ignore this email.
+<p>If you didn't request this, you can safely ignore this email.</p>
 
-Best regards,  
-The ChronoPlay Team
+<p>Best regards,<br>
+The ChronoPlay Team</p>
+</body>
+</html>
 `, userName, verificationLink)
 }
 
 func GenrateEmailVerificationLink(email string) string {
 	baseUrl := os.Getenv("BASE_URL")
-	link := fmt.Sprintf(`%s/verifyEmail?email=%s`, baseUrl, email)
+	link := fmt.Sprintf(`%s/auth/verify?email=%s`, baseUrl, email)
 	return link
 }
 
 func HashPassword(password string) (hashedPassword string, err *helpers.CustomEror) {
 	bytes, gerr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if gerr != nil {
-		return "", err.System("error while hashing password: " + gerr.Error())
+		return "", helpers.System("error while hashing password: " + gerr.Error())
 	}
 	return string(bytes), nil
 }

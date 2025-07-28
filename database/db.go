@@ -1,33 +1,39 @@
 package database
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var DB *gorm.DB
+var MongoClient *mongo.Client
 
-func Connect() {
-	dsn := os.Getenv("DATABASE_URL")
-	var db *gorm.DB
-	var err error
-
-	maxRetries := 10
-	for retries := 0; retries < maxRetries; retries++ {
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-		if err == nil {
-			log.Println("Connected to the database successfully.")
-			DB = db
-			return
-		}
-
-		log.Printf("Retry %d/%d: Failed to connect to DB: %v", retries+1, maxRetries, err)
-		time.Sleep(2 * time.Second)
+func ConnectMongo() {
+	uri := os.Getenv("MONGODB_URI")
+	if uri == "" {
+		log.Fatal("MONGODB_URI not found in environment")
 	}
 
-	log.Fatal("Could not connect to the database after several attempts:", err)
+	clientOptions := options.Client().ApplyURI(uri)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var err error
+	MongoClient, err = mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		log.Fatal("MongoDB connection error:", err)
+	}
+
+	// Ping to verify connection
+	err = MongoClient.Ping(ctx, nil)
+	if err != nil {
+		log.Fatal("MongoDB ping failed:", err)
+	}
+
+	log.Println("Connected to MongoDB Atlas successfully")
 }

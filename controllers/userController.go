@@ -1,11 +1,13 @@
 package controller
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/constants"
 	"github.com/ChronoPlay/chronoplay-backend-service/mapper"
-	model "github.com/ChronoPlay/chronoplay-backend-service/models"
+	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 	service "github.com/ChronoPlay/chronoplay-backend-service/services"
 )
 
@@ -16,6 +18,7 @@ type userController struct {
 type UserController interface {
 	GetUser(*gin.Context)
 	RegisterUser(*gin.Context)
+	VerifyUser(*gin.Context)
 }
 
 func NewUserController(userService service.UserService) UserController {
@@ -32,21 +35,47 @@ func (ctl *userController) GetUser(c *gin.Context) {
 }
 
 func (ctl *userController) RegisterUser(c *gin.Context) {
+	fmt.Print("request has reached here - userController")
 	user, err := mapper.DecodeRegisterUserRequest(c)
 	if err != nil {
 		c.JSON(int(err.Code), constants.JsonResp{
-			Messgae: err.Message,
+			Message: err.Message,
 		})
+		return
 	}
 
 	ctx := c.Request.Context()
 	err = ctl.userService.RegisterUser(ctx, user)
 	if err != nil {
 		c.JSON(int(err.Code), constants.JsonResp{
-			Messgae: err.Message,
+			Message: err.Message,
 		})
+		return
 	}
 	c.JSON(200, constants.JsonResp{
-		Data: "",
+		Data:    "",
+		Message: "User registered successfully. Checkout your mail to verify your emailId",
+	})
+}
+
+func (ctl *userController) VerifyUser(c *gin.Context) {
+	req, err := mapper.DecodeVerifyUserRequest(c)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	ctx := c.Request.Context()
+	err = ctl.userService.VerifyUser(ctx, req)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	c.JSON(200, constants.JsonResp{
+		Data:    "",
+		Message: "User successfully verified",
 	})
 }
