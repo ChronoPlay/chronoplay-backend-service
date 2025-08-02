@@ -24,3 +24,7 @@ func NotFound(msg string) *CustomEror {
 func BadRequest(msg string) *CustomEror {
 	return &CustomEror{Message: msg, Code: 400}
 }
+
+func Unauthorized(msg string) *CustomEror {
+	return &CustomEror{Message: msg, Code: 401}
+}

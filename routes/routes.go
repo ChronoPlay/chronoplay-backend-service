@@ -15,7 +15,13 @@ func SetupRoutes(r *gin.Engine, userController controller.UserController) {
 	fmt.Print("request has entered here- router \n")
 	{
 		auth.POST("/signup", userController.RegisterUser)
-		auth.GET("/user", userController.GetUser)
 		auth.GET("/verify", userController.VerifyUser)
+		auth.POST("/login", userController.LoginUser)
+	}
+
+	user := r.Group("/user", middleware.AuthorizeUser(), middleware.CustomContextMiddleware())
+
+	{
+		user.GET("/get_user", userController.GetUser)
 	}
 }

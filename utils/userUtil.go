@@ -5,7 +5,9 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
@@ -91,4 +93,58 @@ func HashPassword(password string) (hashedPassword string, err *helpers.CustomEr
 		return "", helpers.System("error while hashing password: " + gerr.Error())
 	}
 	return string(bytes), nil
+}
+
+func CheckPasswordHash(password string, hashedPassword string) (err *helpers.CustomEror) {
+	println("Checking password hash...")
+	println("password: ", password,
+		"\nhashedPassword: ", hashedPassword)
+	berr := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if berr != nil {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			return nil
+		}
+		return helpers.System("error while comparing password hash: " + err.Error())
+	}
+	return nil
+}
+
+func GenerateJwtToken(userId uint32) (jwtToken string, err *helpers.CustomEror) {
+	claims := jwt.MapClaims{
+		"user_id": userId,
+		"exp":     time.Now().Add(time.Hour * 1).Unix(),
+		"iat":     time.Now().Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	signedToken, jerr := token.SignedString(jwtSecret)
+	if jerr != nil {
+		return "", helpers.System("error while signing JWT token: " + jerr.Error())
+	}
+
+	return signedToken, nil
+}
+
+func ParseJwtToken(tokenString string) (userId uint32, err *helpers.CustomEror) {
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	token, terr := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, helpers.System("unexpected signing method: " + token.Header["alg"].(string))
+		}
+		return jwtSecret, nil
+	})
+
+	if terr != nil || !token.Valid {
+		return 0, helpers.Unauthorized("invalid JWT token: " + terr.Error())
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || claims["user_id"] == nil {
+		return 0, helpers.Unauthorized("invalid JWT claims")
+	}
+
+	userId = uint32(claims["user_id"].(float64))
+	return userId, nil
 }

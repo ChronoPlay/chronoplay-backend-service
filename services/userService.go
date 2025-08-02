@@ -16,6 +16,7 @@ type UserService interface {
 	GetUser(context.Context, model.User) (*model.User, *helpers.CustomEror)
 	RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomEror)
 	VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomEror)
+	LoginUser(ctx context.Context, req model.LoginUserRequest) (model.LoginUserResponse, *helpers.CustomEror)
 }
 
 type userService struct {
@@ -29,13 +30,14 @@ func NewUserService(userRepo model.UserRepository) UserService {
 }
 
 func (s *userService) GetUser(ctx context.Context, req model.User) (resp *model.User, err *helpers.CustomEror) {
-	if len(req.UserName) != 0 {
-		resp, err = s.userRepo.FindByUserName(ctx, req.UserName)
-	}
+	users, err := s.userRepo.GetUsers(ctx, req)
 	if err != nil {
 		return resp, err
 	}
-	return resp, nil
+	if len(users) == 0 {
+		return nil, helpers.NotFound("User not found")
+	}
+	return &users[0], nil
 }
 
 func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomEror) {
@@ -123,4 +125,55 @@ func (s *userService) VerifyUser(ctx context.Context, req model.VerifyUserReques
 		return helpers.System(err.Error())
 	}
 	return nil
+}
+
+func (s *userService) LoginUser(ctx context.Context, req model.LoginUserRequest) (resp model.LoginUserResponse, err *helpers.CustomEror) {
+	log.Println("LoginUser: Starting login process with req body: ", req)
+
+	if req.Email == "" && req.PhoneNumber == "" {
+		log.Println("LoginUser: Missing email or phone number")
+		return resp, helpers.BadRequest("Email or Phone number is required")
+	}
+	if req.Password == "" {
+		log.Println("LoginUser: Missing password")
+		return resp, helpers.BadRequest("Password is required")
+	}
+
+	log.Println("LoginUser: Fetching user from repository")
+	users, err := s.userRepo.GetUsers(ctx, model.User{
+		Email:       req.Email,
+		PhoneNumber: req.PhoneNumber,
+	})
+	if err != nil {
+		log.Println("LoginUser: Error fetching user from repository:", err)
+		return resp, helpers.System(err.Error())
+	}
+	if len(users) == 0 {
+		log.Println("LoginUser: No user found with given credentials")
+		return resp, helpers.BadRequest("User not found with given credentials")
+	}
+
+	if !users[0].IsAuthorized {
+		log.Println("LoginUser: User is not verified")
+		return resp, helpers.Unauthorized("User is not verified yet. Please verify your emailId first")
+	}
+
+	log.Println("LoginUser: Verifying password")
+	err = utils.CheckPasswordHash(req.Password, users[0].Password)
+	if err != nil {
+		log.Println("LoginUser: Invalid password")
+		return resp, helpers.Unauthorized("Invalid password")
+	}
+
+	log.Println("LoginUser: Generating JWT token for user:", users[0].UserId)
+	jwtToken, err := utils.GenerateJwtToken(users[0].UserId)
+	if err != nil {
+		log.Println("LoginUser: Failed to generate JWT token:", err)
+		return resp, helpers.System("Failed to generate JWT token: " + err.Error())
+	}
+
+	log.Println("LoginUser: User logged in successfully:", users[0].UserId)
+	return model.LoginUserResponse{
+		JwtToken: jwtToken,
+	}, nil
 }
