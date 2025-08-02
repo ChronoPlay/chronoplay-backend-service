@@ -36,3 +36,20 @@ func DecodeVerifyUserRequest(r *gin.Context) (req model.VerifyUserRequest, err *
 
 	return req, nil
 }
+
+func DecodeLoginUser(r *gin.Context) (req model.LoginUserRequest, err *helpers.CustomEror) {
+	if err := r.ShouldBindJSON(&req); err != nil {
+		return model.LoginUserRequest{}, helpers.BadRequest("Invalid request: " + err.Error())
+	}
+
+	if req.Email == "" && req.PhoneNumber == "" {
+		return model.LoginUserRequest{}, helpers.BadRequest("Missing email or phone_number in request body")
+	}
+
+	if req.Password == "" {
+		return model.LoginUserRequest{}, helpers.BadRequest("Missing password in request body")
+	}
+
+	log.Println("Parsed login request with email:", req.Email, "and phone number:", req.PhoneNumber)
+	return req, nil
+}

@@ -131,6 +131,12 @@ func (r *mongoUserRepo) GetUsers(ctx context.Context, req User) ([]User, *helper
 		})
 		isValid = true
 	}
+	if req.PhoneNumber != "" {
+		conditions = append(conditions, bson.M{
+			"phone_number": req.PhoneNumber,
+		})
+		isValid = true
+	}
 
 	if isValid {
 		filter := bson.M{}

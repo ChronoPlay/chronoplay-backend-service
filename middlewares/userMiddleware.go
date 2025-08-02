@@ -44,3 +44,10 @@ func (mw userMiddleware) VerifyUser(ctx context.Context, req model.VerifyUserReq
 	}(time.Now())
 	return mw.next.VerifyUser(ctx, req)
 }
+
+func (mw userMiddleware) LoginUser(ctx context.Context, req model.LoginUserRequest) (resp model.LoginUserResponse, err *helpers.CustomEror) {
+	defer func(begin time.Time) {
+		log.Printf("ctx:", ctx, " method:", "LoginUser", " req:", req, " took:", time.Since(begin), " err:", err, " resp:", resp)
+	}(time.Now())
+	return mw.next.LoginUser(ctx, req)
+}
