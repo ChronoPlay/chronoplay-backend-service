@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
@@ -38,6 +39,7 @@ func main() {
 
 	// Setup Gin and routes
 	router := gin.Default()
+	router.Use(cors.Default())
 	routes.SetupRoutes(router, userController)
 
 	// Start server

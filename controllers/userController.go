@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/gin-gonic/gin"
 
@@ -84,7 +85,11 @@ func (ctl *userController) LoginUser(c *gin.Context) {
 	}
 	ctx := c.Request.Context()
 	resp, err := ctl.userService.LoginUser(ctx, req)
+	log.Printf("Error type: %T, value: %#v\n", err, err)
 	if err != nil {
+
+		// Try logging the error type and value
+
 		c.JSON(int(err.Code), constants.JsonResp{
 			Message: err.Message,
 		})
