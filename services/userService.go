@@ -174,6 +174,6 @@ func (s *userService) LoginUser(ctx context.Context, req model.LoginUserRequest)
 
 	log.Println("LoginUser: User logged in successfully:", users[0].UserId)
 	return model.LoginUserResponse{
-		JwtToken: jwtToken,
+		Token: jwtToken,
 	}, nil
 }

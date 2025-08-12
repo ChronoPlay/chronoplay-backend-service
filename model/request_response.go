@@ -11,5 +11,5 @@ type LoginUserRequest struct {
 }
 
 type LoginUserResponse struct {
-	JwtToken string `json:"jwt_token"`
+	Token string `json:"token"`
 }
