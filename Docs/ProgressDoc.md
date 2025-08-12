@@ -12,6 +12,23 @@
     - Adds money after some time
 9. Setup Shop feature (Backend + Frontend)
 
+## User related task
+
+1. get user by id
+2. add friend by id. (one side. only)
+3. get friends 
+
+## Currency/cards/popularity related task
+
+1. add model for currencies
+2. basic apis
+    - add currency (card, coin)
+    - trade 
+    - buy
+    - sell
+    - get
+3. 
+
 
 # Days
 
