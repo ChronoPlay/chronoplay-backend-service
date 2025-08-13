@@ -30,11 +30,11 @@ type User struct {
 }
 
 type UserRepository interface {
-	FindByUserName(ctx context.Context, username string) (*User, *helpers.CustomEror)
-	RegisterUser(sessCtx mongo.SessionContext, user User) (uint32, *helpers.CustomEror)
+	FindByUserName(ctx context.Context, username string) (*User, *helpers.CustomError)
+	RegisterUser(sessCtx mongo.SessionContext, user User) (uint32, *helpers.CustomError)
 	GetCollection() *mongo.Collection
-	GetUsers(ctx context.Context, req User) ([]User, *helpers.CustomEror)
-	UpdateUser(ctx context.Context, user User) *helpers.CustomEror
+	GetUsers(ctx context.Context, req User) ([]User, *helpers.CustomError)
+	UpdateUser(ctx context.Context, user User) *helpers.CustomError
 }
 
 type mongoUserRepo struct {
@@ -45,7 +45,7 @@ func NewUserRepository(col *mongo.Collection) UserRepository {
 	return &mongoUserRepo{collection: col}
 }
 
-func (repo *mongoUserRepo) FindByUserName(ctx context.Context, userName string) (*User, *helpers.CustomEror) {
+func (repo *mongoUserRepo) FindByUserName(ctx context.Context, userName string) (*User, *helpers.CustomError) {
 	var user User
 	err := repo.collection.FindOne(ctx, bson.M{"username": userName}).Decode(&user)
 	if err != nil {
@@ -57,7 +57,7 @@ func (repo *mongoUserRepo) FindByUserName(ctx context.Context, userName string) 
 	return &user, nil
 }
 
-func (repo *mongoUserRepo) RegisterUser(sessCtx mongo.SessionContext, user User) (uint32, *helpers.CustomEror) {
+func (repo *mongoUserRepo) RegisterUser(sessCtx mongo.SessionContext, user User) (uint32, *helpers.CustomError) {
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
@@ -77,7 +77,7 @@ func (r *mongoUserRepo) GetCollection() *mongo.Collection {
 	return r.collection
 }
 
-func (r *mongoUserRepo) UpdateUser(ctx context.Context, user User) *helpers.CustomEror {
+func (r *mongoUserRepo) UpdateUser(ctx context.Context, user User) *helpers.CustomError {
 	user.UpdatedAt = time.Now()
 
 	// Convert struct to bson.M
@@ -103,7 +103,7 @@ func (r *mongoUserRepo) UpdateUser(ctx context.Context, user User) *helpers.Cust
 	return nil
 }
 
-func (r *mongoUserRepo) GetUsers(ctx context.Context, req User) ([]User, *helpers.CustomEror) {
+func (r *mongoUserRepo) GetUsers(ctx context.Context, req User) ([]User, *helpers.CustomError) {
 	users := []User{}
 	isValid := false
 	conditions := []bson.M{}

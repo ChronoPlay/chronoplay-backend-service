@@ -10,7 +10,7 @@ import (
 	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 )
 
-func DecodeRegisterUserRequest(r *gin.Context) (user model.User, err *helpers.CustomEror) {
+func DecodeRegisterUserRequest(r *gin.Context) (user model.User, err *helpers.CustomError) {
 	if err := r.ShouldBindJSON(&user); err != nil {
 		return model.User{}, helpers.BadRequest("Invalid request: " + err.Error())
 	}
@@ -23,7 +23,7 @@ func DecodeRegisterUserRequest(r *gin.Context) (user model.User, err *helpers.Cu
 	return user, nil
 }
 
-func DecodeVerifyUserRequest(r *gin.Context) (req model.VerifyUserRequest, err *helpers.CustomEror) {
+func DecodeVerifyUserRequest(r *gin.Context) (req model.VerifyUserRequest, err *helpers.CustomError) {
 	// Get the "email" from query parameters
 	email := r.Query("email")
 	if email == "" {
@@ -37,7 +37,7 @@ func DecodeVerifyUserRequest(r *gin.Context) (req model.VerifyUserRequest, err *
 	return req, nil
 }
 
-func DecodeLoginUser(r *gin.Context) (req model.LoginUserRequest, err *helpers.CustomEror) {
+func DecodeLoginUser(r *gin.Context) (req model.LoginUserRequest, err *helpers.CustomError) {
 	if err := r.ShouldBindJSON(&req); err != nil {
 		return model.LoginUserRequest{}, helpers.BadRequest("Invalid request: " + err.Error())
 	}

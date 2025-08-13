@@ -15,7 +15,7 @@ import (
 	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 )
 
-func ValidateUser(user model.User) (err *helpers.CustomEror) {
+func ValidateUser(user model.User) (err *helpers.CustomError) {
 	if len(strings.TrimSpace(user.UserName)) == 0 {
 		return helpers.BadRequest("username is required")
 	}
@@ -42,7 +42,7 @@ func isValidEmail(email string) bool {
 	return re.MatchString(email)
 }
 
-func SendEmailToUser(req dto.EmailVerificationRequest) (err *helpers.CustomEror) {
+func SendEmailToUser(req dto.EmailVerificationRequest) (err *helpers.CustomError) {
 	if !isValidEmail(req.Email) {
 		return helpers.BadRequest("invalid email format")
 	}
@@ -87,7 +87,7 @@ func GenrateEmailVerificationLink(email string) string {
 	return link
 }
 
-func HashPassword(password string) (hashedPassword string, err *helpers.CustomEror) {
+func HashPassword(password string) (hashedPassword string, err *helpers.CustomError) {
 	bytes, gerr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if gerr != nil {
 		return "", helpers.System("error while hashing password: " + gerr.Error())
@@ -95,7 +95,7 @@ func HashPassword(password string) (hashedPassword string, err *helpers.CustomEr
 	return string(bytes), nil
 }
 
-func CheckPasswordHash(password string, hashedPassword string) (err *helpers.CustomEror) {
+func CheckPasswordHash(password string, hashedPassword string) (err *helpers.CustomError) {
 	println("Checking password hash...")
 	println("password: ", password,
 		"\nhashedPassword: ", hashedPassword)
@@ -109,7 +109,7 @@ func CheckPasswordHash(password string, hashedPassword string) (err *helpers.Cus
 	return nil
 }
 
-func GenerateJwtToken(userId uint32) (jwtToken string, err *helpers.CustomEror) {
+func GenerateJwtToken(userId uint32) (jwtToken string, err *helpers.CustomError) {
 	claims := jwt.MapClaims{
 		"user_id": userId,
 		"exp":     time.Now().Add(time.Hour * 1).Unix(),
@@ -127,7 +127,7 @@ func GenerateJwtToken(userId uint32) (jwtToken string, err *helpers.CustomEror) 
 	return signedToken, nil
 }
 
-func ParseJwtToken(tokenString string) (userId uint32, err *helpers.CustomEror) {
+func ParseJwtToken(tokenString string) (userId uint32, err *helpers.CustomError) {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	token, terr := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

@@ -24,28 +24,28 @@ func NewUserMiddleware(next service.UserService) UserMiddleware {
 	}
 }
 
-func (mw userMiddleware) GetUser(ctx context.Context, req model.User) (resp *model.User, err *helpers.CustomEror) {
+func (mw userMiddleware) GetUser(ctx context.Context, req model.User) (resp *model.User, err *helpers.CustomError) {
 	defer func(begin time.Time) {
 		log.Printf("ctx:", ctx, " method:", "GetUser", " req:", req, " took:", time.Since(begin), " err:", err, " resp:", resp)
 	}(time.Now())
 	return mw.next.GetUser(ctx, req)
 }
 
-func (mw userMiddleware) RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomEror) {
+func (mw userMiddleware) RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomError) {
 	defer func(begin time.Time) {
 		log.Printf("ctx:", ctx, " method:", "RegisterUser", " req:", req, " took:", time.Since(begin), " err:", err)
 	}(time.Now())
 	return mw.next.RegisterUser(ctx, req)
 }
 
-func (mw userMiddleware) VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomEror) {
+func (mw userMiddleware) VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomError) {
 	defer func(begin time.Time) {
 		log.Printf("ctx:", ctx, " method:", "RegisterUser", " req:", req, " took:", time.Since(begin), " err:", err)
 	}(time.Now())
 	return mw.next.VerifyUser(ctx, req)
 }
 
-func (mw userMiddleware) LoginUser(ctx context.Context, req model.LoginUserRequest) (resp model.LoginUserResponse, err *helpers.CustomEror) {
+func (mw userMiddleware) LoginUser(ctx context.Context, req model.LoginUserRequest) (resp model.LoginUserResponse, err *helpers.CustomError) {
 	defer func(begin time.Time) {
 		log.Printf("ctx:", ctx, " method:", "LoginUser", " req:", req, " took:", time.Since(begin), " err:", err, " resp:", resp)
 	}(time.Now())

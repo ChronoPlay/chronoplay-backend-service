@@ -1,11 +1,122 @@
 package model
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"context"
+
+	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+)
 
 type CashTransaction struct {
-	ID            primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	TransactionId uint32             `bson:"transaction_id" json:"transaction_id"`
-	Amount        float32            `bson:"amount" json:"amount"`
-	GivenBy       uint32             `bson:"given_by" json:"given_by"`
-	GivenTo       uint32             `bson:"given_to" json:"given_to"`
+	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	TransactionId   uint32             `bson:"transaction_id" json:"transaction_id"`
+	TransactionGuid uint32             `bson:"transaction_guid" json:"transaction_guid"`
+	Amount          float32            `bson:"amount" json:"amount"`
+	GivenBy         uint32             `bson:"given_by" json:"given_by"`
+	GivenTo         uint32             `bson:"given_to" json:"given_to"`
+}
+
+type CashTransactionRepository interface {
+	AddCashTransaction(ctx context.Context, transaction CashTransaction) (uint32, *helpers.CustomError)
+	GetCashTransactionsByUserId(ctx context.Context, userId uint32) ([]CashTransaction, *helpers.CustomError)
+	GetCashTransactionsByTransactionId(ctx context.Context, transactionId uint32) ([]CashTransaction, *helpers.CustomError)
+}
+
+type mongoCashTransactionRepo struct {
+	collection *mongo.Collection
+}
+
+func NewCashTransactionRepository(col *mongo.Collection) CashTransactionRepository {
+	return &mongoCashTransactionRepo{collection: col}
+}
+
+func (repo *mongoCashTransactionRepo) AddCashTransaction(ctx context.Context, transaction CashTransaction) (uint32, *helpers.CustomError) {
+	if transaction.TransactionGuid == 0 {
+		nextGuid, err := GetNextSequence(ctx, repo.collection.Database(), "transactionGuids")
+		if err != nil {
+			return 0, helpers.System("Failed to generate transaction GUID: " + err.Error())
+		}
+		transaction.TransactionGuid = uint32(nextGuid)
+	}
+	nextId, err := GetNextSequence(ctx, repo.collection.Database(), "cashTransactions")
+	if err != nil {
+		return 0, helpers.System("Failed to generate transaction ID: " + err.Error())
+	}
+	transaction.TransactionId = uint32(nextId)
+	_, err = repo.collection.InsertOne(ctx, transaction)
+	if err != nil {
+		return 0, helpers.System("Failed to add cash transaction: " + err.Error())
+	}
+	return transaction.TransactionId, nil
+}
+
+func (repo *mongoCashTransactionRepo) GetCashTransactionsByUserId(ctx context.Context, userId uint32) ([]CashTransaction, *helpers.CustomError) {
+	var transactions []CashTransaction
+	cursor, err := repo.collection.Find(ctx, bson.M{"given_by": userId})
+	if err != nil {
+		return nil, helpers.System("Failed to get cash transactions by user ID: " + err.Error())
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var transaction CashTransaction
+		if err := cursor.Decode(&transaction); err != nil {
+			return nil, helpers.System("Failed to decode cash transaction: " + err.Error())
+		}
+		transactions = append(transactions, transaction)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, helpers.System("Failed to iterate cursor: " + err.Error())
+	}
+
+	return transactions, nil
+}
+
+func (repo *mongoCashTransactionRepo) GetCashTransactionsByTransactionId(ctx context.Context, transactionId uint32) ([]CashTransaction, *helpers.CustomError) {
+	var transactions []CashTransaction
+	cursor, err := repo.collection.Find(ctx, bson.M{"transaction_id": transactionId})
+	if err != nil {
+		return nil, helpers.System("Failed to get cash transactions by transaction ID: " + err.Error())
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var transaction CashTransaction
+		if err := cursor.Decode(&transaction); err != nil {
+			return nil, helpers.System("Failed to decode cash transaction: " + err.Error())
+		}
+		transactions = append(transactions, transaction)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, helpers.System("Failed to iterate cursor: " + err.Error())
+	}
+
+	return transactions, nil
+}
+
+func (repo *mongoCashTransactionRepo) GetCashTransactionsByTransactionGuid(ctx context.Context, transactionGuid uint32) ([]CashTransaction, *helpers.CustomError) {
+	var transactions []CashTransaction
+	cursor, err := repo.collection.Find(ctx, bson.M{"transaction_guid": transactionGuid})
+	if err != nil {
+		return nil, helpers.System("Failed to get cash transactions by transaction GUID: " + err.Error())
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var transaction CashTransaction
+		if err := cursor.Decode(&transaction); err != nil {
+			return nil, helpers.System("Failed to decode cash transaction: " + err.Error())
+		}
+		transactions = append(transactions, transaction)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, helpers.System("Failed to iterate cursor: " + err.Error())
+	}
+
+	return transactions, nil
 }
