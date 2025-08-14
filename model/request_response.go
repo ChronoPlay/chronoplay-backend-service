@@ -13,3 +13,8 @@ type LoginUserRequest struct {
 type LoginUserResponse struct {
 	Token string `json:"token"`
 }
+
+type AddCardRequest struct {
+	CardNumber string `json:"card_number"`
+	CardType   string `json:"card_type"`
+}

@@ -37,10 +37,23 @@ func main() {
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
+	cardRepo := models.NewCardRepository(db)
+	cardService := services.NewCardService(cardRepo)
+	cardController := controllers.NewCardController(cardService)
+
+	loanRepo := models.NewLoanRepository(db)
+	loanService := services.NewLoanService(loanRepo)
+	loanController := controllers.NewLoanController(loanService)
+
+	cardTransactionRepo := models.NewCardTransactionRepository(db)
+	cashTransactionRepo := models.NewCashTransactionRepository(db)
+	transactionService := services.NewTransactionService(cardTransactionRepo, cashTransactionRepo)
+	transactionController := controllers.NewTransactionController(transactionService)
+
 	// Setup Gin and routes
 	router := gin.Default()
 	router.Use(cors.Default())
-	routes.SetupRoutes(router, userController)
+	routes.SetupRoutes(router, userController, cardController, loanController, transactionController)
 
 	// Start server
 	port := os.Getenv("PORT")
