@@ -28,3 +28,15 @@ func BadRequest(msg string) *CustomError {
 func Unauthorized(msg string) *CustomError {
 	return &CustomError{Message: msg, Code: 401}
 }
+
+func NoType(err error) *CustomError {
+	if err == nil {
+		return nil
+	}
+
+	if customErr, ok := err.(*CustomError); ok {
+		return customErr
+	}
+
+	return &CustomError{Message: err.Error(), Code: 500}
+}
