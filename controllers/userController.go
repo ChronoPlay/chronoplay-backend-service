@@ -76,7 +76,7 @@ func (ctl *userController) VerifyUser(c *gin.Context) {
 }
 
 func (ctl *userController) LoginUser(c *gin.Context) {
-	req, err := mapper.DecodeLoginUser(c)
+	req, err := mapper.DecodeLoginUserRequest(c)
 	if err != nil {
 		c.JSON(int(err.Code), constants.JsonResp{
 			Message: err.Message,

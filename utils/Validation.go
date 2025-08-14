@@ -25,7 +25,7 @@ func ValidateUser(user model.User) (err *helpers.CustomError) {
 	if len(strings.TrimSpace(user.Email)) == 0 {
 		return helpers.BadRequest("email is required")
 	}
-	if !isValidEmail(user.Email) {
+	if !IsValidEmail(user.Email) {
 		return helpers.BadRequest("invalid email format")
 	}
 	if len(strings.TrimSpace(user.Password)) < 6 {
@@ -37,13 +37,13 @@ func ValidateUser(user model.User) (err *helpers.CustomError) {
 	return nil
 }
 
-func isValidEmail(email string) bool {
-	re := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+func IsValidEmail(email string) bool {
+	re := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,4}$`)
 	return re.MatchString(email)
 }
 
 func SendEmailToUser(req dto.EmailVerificationRequest) (err *helpers.CustomError) {
-	if !isValidEmail(req.Email) {
+	if !IsValidEmail(req.Email) {
 		return helpers.BadRequest("invalid email format")
 	}
 

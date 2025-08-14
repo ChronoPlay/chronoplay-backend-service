@@ -137,9 +137,9 @@ func (s *userService) VerifyUser(ctx context.Context, req model.VerifyUserReques
 func (s *userService) LoginUser(ctx context.Context, req model.LoginUserRequest) (resp model.LoginUserResponse, err *helpers.CustomError) {
 	log.Println("LoginUser: Starting login process with req body: ", req)
 
-	if req.Email == "" && req.PhoneNumber == "" {
-		log.Println("LoginUser: Missing email or phone number")
-		return resp, helpers.BadRequest("Email or Phone number is required")
+	if req.Email == "" && req.UserName == "" {
+		log.Println("LoginUser: Missing email or username")
+		return resp, helpers.BadRequest("Email or username is required")
 	}
 	if req.Password == "" {
 		log.Println("LoginUser: Missing password")
@@ -149,8 +149,9 @@ func (s *userService) LoginUser(ctx context.Context, req model.LoginUserRequest)
 	log.Println("LoginUser: Fetching user from repository")
 	users, err := s.userRepo.GetUsers(ctx, model.User{
 		Email:       req.Email,
-		PhoneNumber: req.PhoneNumber,
+		UserName: req.UserName,
 	})
+	
 	if err != nil {
 		log.Println("LoginUser: Error fetching user from repository:", err)
 		return resp, helpers.System(err.Error())

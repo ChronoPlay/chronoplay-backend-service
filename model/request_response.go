@@ -6,8 +6,9 @@ type VerifyUserRequest struct {
 
 type LoginUserRequest struct {
 	Email       string `bson:"email" json:"email"`
-	PhoneNumber string `bson:"phone_number" json:"phone_number"`
+	UserName    string `bson:"user_name" json:"user_name"`
 	Password    string `bson:"password" json:"password"`
+	Identifier  string  `bson:"identifier" json:"identifier"`
 }
 
 type LoginUserResponse struct {
