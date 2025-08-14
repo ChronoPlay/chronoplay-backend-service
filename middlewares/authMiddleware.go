@@ -61,14 +61,16 @@ func AuthorizeUser() gin.HandlerFunc {
 		}
 		log.Printf("Parsed token: %s\n", token)
 
-		userId, err := utils.ParseJwtToken(token)
+		userId, userType, err := utils.ParseJwtToken(token)
 		if err != nil {
 			c.AbortWithStatusJSON(401, gin.H{"error": "Invalid token"})
 			return
 		}
 		log.Printf("User ID from token: %d\n", userId)
+		log.Printf("User Type from token: %s\n", userType)
 
 		c.Set("UserID", userId)
+		c.Set("UserType", userType)
 		c.Next()
 	}
 }

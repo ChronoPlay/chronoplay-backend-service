@@ -25,6 +25,7 @@ type LoanRepository interface {
 	AddLoan(ctx context.Context, loan Loan) (uint32, *helpers.CustomError)
 	GetLoansByUserId(ctx context.Context, userId uint32) ([]Loan, *helpers.CustomError)
 	GetLoanByLoanId(ctx context.Context, loanId uint32) (*Loan, *helpers.CustomError)
+	UpdateLoan(ctx context.Context, loan Loan) *helpers.CustomError
 }
 
 type mongoLoanRepo struct {

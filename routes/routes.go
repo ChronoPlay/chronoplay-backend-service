@@ -9,7 +9,7 @@ import (
 	middleware "github.com/ChronoPlay/chronoplay-backend-service/middlewares"
 )
 
-func SetupRoutes(r *gin.Engine, userController controller.UserController) {
+func SetupRoutes(r *gin.Engine, userController controller.UserController, cardController controller.CardController, loanController controller.LoanController, transactionController controller.TransactionController) {
 	auth := r.Group("/auth", middleware.CustomContextMiddleware())
 
 	fmt.Print("request has entered here- router \n")
@@ -23,5 +23,10 @@ func SetupRoutes(r *gin.Engine, userController controller.UserController) {
 
 	{
 		user.GET("/get_user", userController.GetUser)
+	}
+
+	card := r.Group("/card", middleware.AuthorizeUser(), middleware.CustomContextMiddleware())
+	{
+		card.POST("/add", cardController.AddCard)
 	}
 }

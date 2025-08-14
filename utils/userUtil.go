@@ -127,7 +127,7 @@ func GenerateJwtToken(userId uint32) (jwtToken string, err *helpers.CustomError)
 	return signedToken, nil
 }
 
-func ParseJwtToken(tokenString string) (userId uint32, err *helpers.CustomError) {
+func ParseJwtToken(tokenString string) (userId uint32, userType string, err *helpers.CustomError) {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	token, terr := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -146,5 +146,6 @@ func ParseJwtToken(tokenString string) (userId uint32, err *helpers.CustomError)
 	}
 
 	userId = uint32(claims["user_id"].(float64))
-	return userId, nil
+	userType := claims["user_type"].(string)
+	return userId, userType, nil
 }
