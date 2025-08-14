@@ -86,7 +86,7 @@ func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *he
 	})
 
 	if merr != nil {
-		return helpers.System("Transaction failed: " + merr.Error())
+		return helpers.NoType(merr)
 	}
 
 	emailVerificationLink := utils.GenrateEmailVerificationLink(req.Email)
