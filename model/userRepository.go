@@ -18,7 +18,7 @@ type User struct {
 	Name         string             `bson:"name" json:"name"`
 	Email        string             `bson:"email" json:"email"`
 	Password     string             `bson:"password" json:"password"`
-	UserName     string             `bson:"username" json:"username"`
+	UserName     string             `bson:"user_name" json:"user_name"`
 	PhoneNumber  string             `bson:"phone_number" json:"phone_number"`
 	Cash         uint32             `bson:"cash" json:"cash"`
 	Bronze       uint32             `bson:"bronze" json:"bronze"`
@@ -107,6 +107,7 @@ func (r *mongoUserRepo) GetUsers(ctx context.Context, req User) ([]User, *helper
 	users := []User{}
 	isValid := false
 	conditions := []bson.M{}
+
 	if req.UserId != 0 {
 		conditions = append(conditions, bson.M{
 			"user_id": req.UserId,

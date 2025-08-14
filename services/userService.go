@@ -62,15 +62,22 @@ func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *he
 
 		existingUsers, err := s.userRepo.GetUsers(sessCtx, model.User{
 			UserName: req.UserName,
-			Email:    req.Email,
 		})
 		if err != nil {
 			return err
 		}
 		if len(existingUsers) != 0 {
-			return helpers.BadRequest("User exists with given userName or emailId")
+			return helpers.BadRequest("User exists with given userName")
 		}
-
+		existingUsers, err = s.userRepo.GetUsers(sessCtx, model.User{
+			Email: req.Email,
+		})
+		if err != nil {
+			return err
+		}
+		if len(existingUsers) != 0 {
+			return helpers.BadRequest("User exists with given emailId")
+		}
 		req.Password, err = utils.HashPassword(req.Password)
 		if err != nil {
 			return err // Will abort the transaction
