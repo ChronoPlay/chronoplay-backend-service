@@ -137,15 +137,15 @@ func ParseJwtToken(tokenString string) (userId uint32, userType string, err *hel
 	})
 
 	if terr != nil || !token.Valid {
-		return 0, helpers.Unauthorized("invalid JWT token: " + terr.Error())
+		return 0, userType, helpers.Unauthorized("invalid JWT token: " + terr.Error())
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || claims["user_id"] == nil {
-		return 0, helpers.Unauthorized("invalid JWT claims")
+		return 0, userType, helpers.Unauthorized("invalid JWT claims")
 	}
 
 	userId = uint32(claims["user_id"].(float64))
-	userType := claims["user_type"].(string)
+	userType = claims["user_type"].(string)
 	return userId, userType, nil
 }
