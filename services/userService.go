@@ -13,10 +13,10 @@ import (
 )
 
 type UserService interface {
-	GetUser(context.Context, model.User) (*model.User, *helpers.CustomEror)
-	RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomEror)
-	VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomEror)
-	LoginUser(ctx context.Context, req model.LoginUserRequest) (model.LoginUserResponse, *helpers.CustomEror)
+	GetUser(context.Context, model.User) (*model.User, *helpers.CustomError)
+	RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomError)
+	VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomError)
+	LoginUser(ctx context.Context, req model.LoginUserRequest) (model.LoginUserResponse, *helpers.CustomError)
 }
 
 type userService struct {
@@ -29,7 +29,7 @@ func NewUserService(userRepo model.UserRepository) UserService {
 	}
 }
 
-func (s *userService) GetUser(ctx context.Context, req model.User) (resp *model.User, err *helpers.CustomEror) {
+func (s *userService) GetUser(ctx context.Context, req model.User) (resp *model.User, err *helpers.CustomError) {
 	users, err := s.userRepo.GetUsers(ctx, req)
 	if err != nil {
 		return resp, err
@@ -40,7 +40,7 @@ func (s *userService) GetUser(ctx context.Context, req model.User) (resp *model.
 	return &users[0], nil
 }
 
-func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomEror) {
+func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomError) {
 	err = utils.ValidateUser(req)
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *he
 	return nil
 }
 
-func (s *userService) VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomEror) {
+func (s *userService) VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomError) {
 	if req.Email == "" {
 		return helpers.BadRequest("Email is required")
 	}
@@ -127,7 +127,7 @@ func (s *userService) VerifyUser(ctx context.Context, req model.VerifyUserReques
 	return nil
 }
 
-func (s *userService) LoginUser(ctx context.Context, req model.LoginUserRequest) (resp model.LoginUserResponse, err *helpers.CustomEror) {
+func (s *userService) LoginUser(ctx context.Context, req model.LoginUserRequest) (resp model.LoginUserResponse, err *helpers.CustomError) {
 	log.Println("LoginUser: Starting login process with req body: ", req)
 
 	if req.Email == "" && req.PhoneNumber == "" {

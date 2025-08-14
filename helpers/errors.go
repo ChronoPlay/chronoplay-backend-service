@@ -1,11 +1,11 @@
 package helpers
 
-type CustomEror struct {
+type CustomError struct {
 	Message string
 	Code    int
 }
 
-func (e *CustomEror) Error() string {
+func (e *CustomError) Error() string {
 	if e != nil {
 		return e.Message
 	} else {
@@ -13,18 +13,18 @@ func (e *CustomEror) Error() string {
 	}
 }
 
-func System(msg string) *CustomEror {
-	return &CustomEror{Message: msg, Code: 500}
+func System(msg string) *CustomError {
+	return &CustomError{Message: msg, Code: 500}
 }
 
-func NotFound(msg string) *CustomEror {
-	return &CustomEror{Message: msg, Code: 404}
+func NotFound(msg string) *CustomError {
+	return &CustomError{Message: msg, Code: 404}
 }
 
-func BadRequest(msg string) *CustomEror {
-	return &CustomEror{Message: msg, Code: 400}
+func BadRequest(msg string) *CustomError {
+	return &CustomError{Message: msg, Code: 400}
 }
 
-func Unauthorized(msg string) *CustomEror {
-	return &CustomEror{Message: msg, Code: 401}
+func Unauthorized(msg string) *CustomError {
+	return &CustomError{Message: msg, Code: 401}
 }

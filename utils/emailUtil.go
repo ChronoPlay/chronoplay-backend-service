@@ -9,7 +9,7 @@ import (
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 )
 
-func SendEmail(to []string, subject, body string) (err *helpers.CustomEror) {
+func SendEmail(to []string, subject, body string) (err *helpers.CustomError) {
 	from := os.Getenv("EMAIL_USER")
 	password := os.Getenv("EMAIL_PASSOWRD")
 

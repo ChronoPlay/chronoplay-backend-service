@@ -32,7 +32,7 @@ func main() {
 	}
 	db := database.MongoClient.Database(dbName).Collection("users")
 
-	// Setup dependency injection
+	// Setup dependency injection for user
 	userRepo := models.NewUserRepository(db)
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
