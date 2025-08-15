@@ -65,7 +65,7 @@ func (s *cardService) AddCard(ctx context.Context, req dto.AddCardRequest) *help
 	merr := mongo.WithSession(ctx, session, func(sessCtx mongo.SessionContext) error {
 		// You can use sessCtx instead of ctx for transactional operations
 
-		existingCards, err := s.cardRepo.GetCards(sessCtx, model.Card{
+		existingCards, err := s.cardRepo.GetCards(sessCtx, model.GetCardsRequest{
 			Number: req.CardNumber,
 		})
 		if err != nil {

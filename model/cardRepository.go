@@ -24,6 +24,11 @@ type Card struct {
 	ImageUrl    string             `bson:"image_url" json:"image_url"`
 }
 
+type GetCardsRequest struct {
+	Number  string   `json:"number"`
+	Numbers []string `json:"numbers"`
+}
+
 type CardRepository interface {
 	GetCollection() *mongo.Collection
 	AddCard(ctx context.Context, card Card) *helpers.CustomError
@@ -31,7 +36,7 @@ type CardRepository interface {
 	GetCardByNumber(ctx context.Context, cardNumber string) (*Card, *helpers.CustomError)
 	UpdateCard(ctx context.Context, card Card) *helpers.CustomError
 	GetOwnersByCardNumber(ctx context.Context, cardNumber string) ([]uint32, *helpers.CustomError)
-	GetCards(ctx context.Context, req Card) ([]Card, *helpers.CustomError)
+	GetCards(ctx context.Context, req GetCardsRequest) ([]Card, *helpers.CustomError)
 }
 
 type mongoCardRepo struct {
@@ -118,20 +123,18 @@ func (repo *mongoCardRepo) GetOwnersByCardNumber(ctx context.Context, cardNumber
 	return card.Owners, nil
 }
 
-func (repo *mongoCardRepo) GetCards(ctx context.Context, req Card) ([]Card, *helpers.CustomError) {
+func (repo *mongoCardRepo) GetCards(ctx context.Context, req GetCardsRequest) ([]Card, *helpers.CustomError) {
 	cards := []Card{}
 	isValid := false
 	conditions := []bson.M{}
-
-	if req.Number != "" {
+	if len(req.Numbers) > 0 {
 		conditions = append(conditions, bson.M{
-			"number": req.Number,
+			"number": bson.M{"$in": req.Numbers},
 		})
 		isValid = true
-	}
-	if req.Description != "" {
+	} else if req.Number != "" {
 		conditions = append(conditions, bson.M{
-			"description": req.Description,
+			"number": req.Number,
 		})
 		isValid = true
 	}

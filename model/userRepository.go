@@ -21,7 +21,7 @@ type User struct {
 	Password     string             `bson:"password" json:"password"`
 	UserName     string             `bson:"user_name" json:"user_name"`
 	PhoneNumber  string             `bson:"phone_number" json:"phone_number"`
-	Cash         uint32             `bson:"cash" json:"cash"`
+	Cash         float32            `bson:"cash" json:"cash"`
 	IsAuthorized bool               `bson:"is_authorized" json:"is_authorized"`
 	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt    time.Time          `bson:"updated_at" json:"updated_at"`

@@ -51,7 +51,7 @@ func main() {
 
 	cardTransactionRepo := models.NewCardTransactionRepository(cardTransactionDb)
 	cashTransactionRepo := models.NewCashTransactionRepository(cashTransactionDb)
-	transactionService := services.NewTransactionService(cardTransactionRepo, cashTransactionRepo)
+	transactionService := services.NewTransactionService(cardTransactionRepo, cashTransactionRepo, userRepo, cardRepo)
 	transactionController := controllers.NewTransactionController(transactionService)
 
 	// Setup Gin and routes
