@@ -31,4 +31,12 @@ func SetupRoutes(r *gin.Engine, userController controller.UserController, cardCo
 		card.GET("/get_card", cardController.GetCard)
 	}
 
+	transaction := r.Group("/transaction", middleware.AuthorizeUser(), middleware.CustomContextMiddleware())
+	{
+		transaction.POST("/transfer_cash", transactionController.Transfercash)
+		transaction.POST("/transfer_cards", transactionController.Transfercards)
+		transaction.POST("/exchange", transactionController.Exchange)
+		transaction.GET("/get_transactions", transactionController.GetTransactions)
+	}
+
 }

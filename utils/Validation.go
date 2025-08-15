@@ -171,6 +171,9 @@ func ValidateAddCardRequest(req dto.AddCardRequest) (err *helpers.CustomError) {
 	if len(strings.TrimSpace(req.UserType)) == 0 {
 		return helpers.BadRequest("user type is required")
 	}
+	if req.Image == nil {
+		return helpers.BadRequest("image is required")
+	}
 	if !IsAdmin(req.UserType) {
 		return helpers.Unauthorized("only admin can add cards")
 	}
@@ -180,6 +183,56 @@ func ValidateAddCardRequest(req dto.AddCardRequest) (err *helpers.CustomError) {
 func ValidateGetCardRequest(req dto.GetCardRequest) (err *helpers.CustomError) {
 	if len(strings.TrimSpace(req.CardNumber)) == 0 {
 		return helpers.BadRequest("card number is required")
+	}
+	return nil
+}
+
+func ValidateTransferCashRequest(req dto.TransferCashRequest) (err *helpers.CustomError) {
+	if req.Amount <= 0 {
+		return helpers.BadRequest("amount must be greater than zero")
+	}
+	if req.GivenBy == 0 {
+		return helpers.BadRequest("given by user ID is required")
+	}
+	if req.GivenTo == 0 {
+		return helpers.BadRequest("given to user ID is required")
+	}
+	if req.GivenBy == req.GivenTo {
+		return helpers.BadRequest("given by and given to user IDs cannot be the same")
+	}
+	if req.UserId == 0 {
+		return helpers.BadRequest("user ID is required")
+	}
+	if req.Status == model.TRANSACTION_STATUS_SUCCESS && req.UserId != req.GivenBy {
+		return helpers.BadRequest("only the user who is giving the amount can mark it as successful")
+	}
+	return nil
+}
+
+func IsValidTransactionStatus(status string) bool {
+	for _, validStatus := range model.ValidTransactionStatuses {
+		if strings.EqualFold(status, validStatus) {
+			return true
+		}
+	}
+	return false
+}
+
+func ValidateTransferCardsRequest(req dto.TransferCardRequest) (err *helpers.CustomError) {
+	if len(req.Cards) == 0 {
+		return helpers.BadRequest("at least one card is required for transfer")
+	}
+	if req.GivenBy == 0 {
+		return helpers.BadRequest("given by user ID is required")
+	}
+	if req.GivenTo == 0 {
+		return helpers.BadRequest("given to user ID is required")
+	}
+	if req.GivenBy == req.GivenTo {
+		return helpers.BadRequest("given by and given to user IDs cannot be the same")
+	}
+	if req.Status == model.TRANSACTION_STATUS_SUCCESS && req.UserId != req.GivenBy {
+		return helpers.BadRequest("only the user who is giving the cards can mark it as successful")
 	}
 	return nil
 }

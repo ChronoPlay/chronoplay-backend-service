@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"time"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,9 +17,13 @@ type CashTransaction struct {
 	Amount          float32            `bson:"amount" json:"amount"`
 	GivenBy         uint32             `bson:"given_by" json:"given_by"`
 	GivenTo         uint32             `bson:"given_to" json:"given_to"`
+	Status          string             `bson:"status" json:"status"`
+	CreatedAt       primitive.DateTime `bson:"created_at" json:"created_at"`
+	CreatedBy       uint32             `bson:"created_by" json:"created_by"`
 }
 
 type CashTransactionRepository interface {
+	GetCollection() *mongo.Collection
 	AddCashTransaction(ctx context.Context, transaction CashTransaction) (uint32, *helpers.CustomError)
 	GetCashTransactionsByUserId(ctx context.Context, userId uint32) ([]CashTransaction, *helpers.CustomError)
 	GetCashTransactionsByTransactionId(ctx context.Context, transactionId uint32) ([]CashTransaction, *helpers.CustomError)
@@ -30,6 +35,10 @@ type mongoCashTransactionRepo struct {
 
 func NewCashTransactionRepository(col *mongo.Collection) CashTransactionRepository {
 	return &mongoCashTransactionRepo{collection: col}
+}
+
+func (repo *mongoCashTransactionRepo) GetCollection() *mongo.Collection {
+	return repo.collection
 }
 
 func (repo *mongoCashTransactionRepo) AddCashTransaction(ctx context.Context, transaction CashTransaction) (uint32, *helpers.CustomError) {
@@ -45,6 +54,7 @@ func (repo *mongoCashTransactionRepo) AddCashTransaction(ctx context.Context, tr
 		return 0, helpers.System("Failed to generate transaction ID: " + err.Error())
 	}
 	transaction.TransactionId = uint32(nextId)
+	transaction.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	_, err = repo.collection.InsertOne(ctx, transaction)
 	if err != nil {
 		return 0, helpers.System("Failed to add cash transaction: " + err.Error())

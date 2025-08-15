@@ -1,6 +1,8 @@
 package mapper
 
 import (
+	"log"
+
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 	"github.com/ChronoPlay/chronoplay-backend-service/model"
@@ -9,13 +11,17 @@ import (
 
 func DecodeAddCardRequest(c *gin.Context) (dto.AddCardRequest, *helpers.CustomError) {
 	var req dto.AddCardRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		return dto.AddCardRequest{}, helpers.BadRequest("Invalid request body")
+	if err := c.ShouldBind(&req); err != nil {
+		return dto.AddCardRequest{}, helpers.BadRequest("Invalid request body" + err.Error())
 	}
+	log.Println("Decoded AddCardRequest:", req)
 	userId, _ := c.Get("UserID")
 	req.UserId = userId.(uint32)
-	userType, _ := c.Get("UserType")
-	req.UserType = userType.(string)
+	file, err := c.FormFile("image")
+	if err != nil {
+		return dto.AddCardRequest{}, helpers.BadRequest("Failed to get image from request")
+	}
+	req.Image = file
 	return req, nil
 }
 
@@ -31,5 +37,9 @@ func EncodeGetCardResponse(req *model.Card) (res dto.GetCardResponse) {
 	res.Name = req.Name
 	res.Description = req.Description
 	res.Number = req.Number
+	res.Total = req.Total
+	res.Available = req.Available
+	res.Occupied = req.Occupied
+	res.ImageUrl = req.ImageUrl
 	return res
 }

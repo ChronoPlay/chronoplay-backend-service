@@ -21,6 +21,7 @@ func DecodeRegisterUserRequest(r *gin.Context) (user model.User, err *helpers.Cu
 	if bytes, _ := json.Marshal(user); bytes != nil {
 		log.Println("Parsed user:", string(bytes))
 	}
+	user.UserType = model.USER_TYPE_USER
 
 	return user, nil
 }
@@ -63,9 +64,9 @@ func DecodeLoginUserRequest(r *gin.Context) (req dto.LoginUserRequest, err *help
 	log.Println("Parsed login request with email:", req.Email, "and user_name:", req.UserName)
 	return req, nil
 }
-func EncodeGetUserResponse(req *model.User)(res dto.GetUserResponse){
-	res.Email=req.Email
-	res.Name=req.Name
-	res.UserName=req.UserName
+func EncodeGetUserResponse(req *model.User) (res dto.GetUserResponse) {
+	res.Email = req.Email
+	res.Name = req.Name
+	res.UserName = req.UserName
 	return res
 }

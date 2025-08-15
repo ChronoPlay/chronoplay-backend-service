@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
@@ -18,16 +19,37 @@ type CardService interface {
 
 type cardService struct {
 	cardRepo model.CardRepository
+	UserRepo model.UserRepository
 }
 
-func NewCardService(cardRepo model.CardRepository) CardService {
+func NewCardService(cardRepo model.CardRepository, userRepo model.UserRepository) CardService {
 	return &cardService{
 		cardRepo: cardRepo,
+		UserRepo: userRepo,
 	}
 }
 
 func (s *cardService) AddCard(ctx context.Context, req dto.AddCardRequest) *helpers.CustomError {
-	err := utils.ValidateAddCardRequest(req)
+	if req.UserId == 0 {
+		return helpers.BadRequest("User ID is required")
+	}
+	users, err := s.UserRepo.GetUsers(ctx, model.User{UserId: req.UserId})
+	if err != nil {
+		return err
+	}
+	if len(users) == 0 {
+		return helpers.NotFound("User not found")
+	}
+	fmt.Println("User:", users[0])
+	req.UserType = users[0].UserType
+
+	err = utils.ValidateAddCardRequest(req)
+	if err != nil {
+		return err
+	}
+
+	// uploading image on cloudinary
+	imageUrl, err := utils.UploadImageToCloudinary(ctx, req.Image)
 	if err != nil {
 		return err
 	}
@@ -43,7 +65,7 @@ func (s *cardService) AddCard(ctx context.Context, req dto.AddCardRequest) *help
 	merr := mongo.WithSession(ctx, session, func(sessCtx mongo.SessionContext) error {
 		// You can use sessCtx instead of ctx for transactional operations
 
-		existingCards, err := s.cardRepo.GetCards(sessCtx, model.Card{
+		existingCards, err := s.cardRepo.GetCards(sessCtx, model.GetCardsRequest{
 			Number: req.CardNumber,
 		})
 		if err != nil {
@@ -59,6 +81,7 @@ func (s *cardService) AddCard(ctx context.Context, req dto.AddCardRequest) *help
 			Description: req.CardDescription,
 			Total:       req.TotalCards,
 			Creator:     req.UserId,
+			ImageUrl:    imageUrl,
 		})
 		if err != nil {
 			return err
@@ -81,15 +104,6 @@ func (s *cardService) GetCard(ctx context.Context, req dto.GetCardRequest) (res 
 	}
 
 	log.Println("Getting Name by Card Number")
-	existingCards, err := s.cardRepo.GetCards(ctx, model.Card{
-		Number: req.CardNumber,
-	})
-	if err != nil {
-		return res, err
-	}
-	if len(existingCards) != 0 {
-		return res, helpers.BadRequest("Card exists with given card number")
-	}
 	// Call repository method with sessCtx
 	card, err := s.cardRepo.GetCardByNumber(ctx, req.CardNumber)
 
