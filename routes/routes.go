@@ -39,10 +39,4 @@ func SetupRoutes(r *gin.Engine, userController controller.UserController, cardCo
 		transaction.GET("/get_transactions", transactionController.GetTransactions)
 	}
 
-	// this group generally for those transactions which will be done to or by system
-	admin := r.Group("/admin", middleware.AuthorizeUser(), middleware.CustomContextMiddleware())
-	{
-		admin.POST("/give_cards", transactionController.GiveCards)
-	}
-
 }
