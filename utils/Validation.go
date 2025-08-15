@@ -147,7 +147,7 @@ func ParseJwtToken(tokenString string) (userId uint32, userType string, err *hel
 	}
 
 	userId = uint32(claims["user_id"].(float64))
-	userType = claims["user_type"].(string)
+	//userType = claims["user_type"].(string)
 	return userId, userType, nil
 }
 

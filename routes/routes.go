@@ -22,7 +22,8 @@ func SetupRoutes(r *gin.Engine, userController controller.UserController, cardCo
 	user := r.Group("/user", middleware.AuthorizeUser(), middleware.CustomContextMiddleware())
 
 	{
-		user.GET("/get_user", userController.GetUser)
+		user.GET("/user", userController.GetUser)
+		user.GET("/get_user",userController.GetUserById)
 	}
 
 	card := r.Group("/card", middleware.AuthorizeUser(), middleware.CustomContextMiddleware())

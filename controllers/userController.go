@@ -3,6 +3,8 @@ package controller
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -21,6 +23,7 @@ type UserController interface {
 	VerifyUser(*gin.Context)
 	LoginUser(*gin.Context)
 	GetUser(*gin.Context)
+	GetUserById(*gin.Context)
 }
 
 func NewUserController(userService service.UserService) UserController {
@@ -116,5 +119,37 @@ func (ctl *userController) GetUser(c *gin.Context) {
 	c.JSON(200, constants.JsonResp{
 		Data:    user,
 		Message: "User fetched successfully",
+	})
+}
+func (ctl *userController) GetUserById(c *gin.Context) {
+	ctx := c.Request.Context()
+	userId := c.Query("user_id")
+	id64, perr := strconv.ParseUint(userId, 10, 32)
+	if perr != nil {
+		c.JSON(http.StatusBadRequest, constants.JsonResp{
+			Message: "Error while parsing user_id"+perr.Error(),
+		})
+		return
+	}
+	user, err := ctl.userService.GetUser(ctx, model.User{
+		UserId: uint32(id64),
+	})
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	if user == nil {
+		c.JSON(http.StatusBadRequest, constants.JsonResp{
+			Message: "user not found by the user_id",
+		})
+		return
+	}
+	data := mapper.EncodeGetUserResponse(user)
+
+	c.JSON(200, constants.JsonResp{
+		Data:    data,
+		Message: "User details fetched successfully",
 	})
 }

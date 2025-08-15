@@ -20,3 +20,9 @@ type LoginUserRequest struct {
 type LoginUserResponse struct {
 	Token string `json:"token"`
 }
+
+type GetUserResponse struct{
+	Name         string             `bson:"name" json:"name"`
+	Email        string             `bson:"email" json:"email"`
+	UserName     string             `bson:"user_name" json:"user_name"`	
+}
