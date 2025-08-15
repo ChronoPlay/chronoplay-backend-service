@@ -13,6 +13,7 @@ import (
 
 type CardService interface {
 	AddCard(ctx context.Context, req dto.AddCardRequest) *helpers.CustomError
+	GetCard(ctx context.Context, req dto.GetCardRequest) (res *model.Card, err *helpers.CustomError)
 }
 
 type cardService struct {
@@ -71,4 +72,29 @@ func (s *cardService) AddCard(ctx context.Context, req dto.AddCardRequest) *help
 	}
 
 	return nil
+}
+
+func (s *cardService) GetCard(ctx context.Context, req dto.GetCardRequest) (res *model.Card, err *helpers.CustomError) {
+	err = utils.ValidateGetCardRequest(req)
+	if err != nil {
+		return res, err
+	}
+
+	log.Println("Getting Name by Card Number")
+	existingCards, err := s.cardRepo.GetCards(ctx, model.Card{
+		Number: req.CardNumber,
+	})
+	if err != nil {
+		return res, err
+	}
+	if len(existingCards) != 0 {
+		return res, helpers.BadRequest("Card exists with given card number")
+	}
+	// Call repository method with sessCtx
+	card, err := s.cardRepo.GetCardByNumber(ctx, req.CardNumber)
+
+	if err != nil {
+		return res, err
+	}
+	return card, nil
 }

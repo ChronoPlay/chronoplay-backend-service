@@ -176,3 +176,10 @@ func ValidateAddCardRequest(req dto.AddCardRequest) (err *helpers.CustomError) {
 	}
 	return nil
 }
+
+func ValidateGetCardRequest(req dto.GetCardRequest) (err *helpers.CustomError) {
+	if len(strings.TrimSpace(req.CardNumber)) == 0 {
+		return helpers.BadRequest("card number is required")
+	}
+	return nil
+}
