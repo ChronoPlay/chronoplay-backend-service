@@ -15,8 +15,8 @@ import (
 type UserService interface {
 	GetUser(context.Context, model.User) (*model.User, *helpers.CustomError)
 	RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomError)
-	VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomError)
-	LoginUser(ctx context.Context, req model.LoginUserRequest) (model.LoginUserResponse, *helpers.CustomError)
+	VerifyUser(ctx context.Context, req dto.VerifyUserRequest) (err *helpers.CustomError)
+	LoginUser(ctx context.Context, req dto.LoginUserRequest) (dto.LoginUserResponse, *helpers.CustomError)
 }
 
 type userService struct {
@@ -109,7 +109,7 @@ func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *he
 	return nil
 }
 
-func (s *userService) VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomError) {
+func (s *userService) VerifyUser(ctx context.Context, req dto.VerifyUserRequest) (err *helpers.CustomError) {
 	if req.Email == "" {
 		return helpers.BadRequest("Email is required")
 	}
@@ -134,7 +134,7 @@ func (s *userService) VerifyUser(ctx context.Context, req model.VerifyUserReques
 	return nil
 }
 
-func (s *userService) LoginUser(ctx context.Context, req model.LoginUserRequest) (resp model.LoginUserResponse, err *helpers.CustomError) {
+func (s *userService) LoginUser(ctx context.Context, req dto.LoginUserRequest) (resp dto.LoginUserResponse, err *helpers.CustomError) {
 	log.Println("LoginUser: Starting login process with req body: ", req)
 
 	if req.Email == "" && req.UserName == "" {
@@ -148,10 +148,10 @@ func (s *userService) LoginUser(ctx context.Context, req model.LoginUserRequest)
 
 	log.Println("LoginUser: Fetching user from repository")
 	users, err := s.userRepo.GetUsers(ctx, model.User{
-		Email:       req.Email,
+		Email:    req.Email,
 		UserName: req.UserName,
 	})
-	
+
 	if err != nil {
 		log.Println("LoginUser: Error fetching user from repository:", err)
 		return resp, helpers.System(err.Error())
@@ -181,7 +181,7 @@ func (s *userService) LoginUser(ctx context.Context, req model.LoginUserRequest)
 	}
 
 	log.Println("LoginUser: User logged in successfully:", users[0].UserId)
-	return model.LoginUserResponse{
+	return dto.LoginUserResponse{
 		Token: jwtToken,
 	}, nil
 }

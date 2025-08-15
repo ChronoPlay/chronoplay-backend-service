@@ -17,14 +17,14 @@
 
 ## User related task
 
-1. get user by id
+1. get user by id => shivam
 2. add friend by id. (one side. only)
 3. get friends 
 
 ## Currency/cards/popularity related task
 
-1. add model for currencies
-2. basic apis
+1. ~~add model for currencies~~
+2. basic apis => sparsh
     - add currency (card, coin)
     - trade 
     - buy
@@ -43,6 +43,12 @@
 4. Models for currencies, loan and cash/cards.
 
 
-## 13 Aug
+## 14 Aug
+
+1. Created repo functions for cards, loans, transactions
+2. fixed login pages
+3. added verifications in signup flow
+
+## 15 Aug
 
 1. 

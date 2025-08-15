@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 	utils "github.com/ChronoPlay/chronoplay-backend-service/utils"
@@ -24,11 +25,11 @@ func DecodeRegisterUserRequest(r *gin.Context) (user model.User, err *helpers.Cu
 	return user, nil
 }
 
-func DecodeVerifyUserRequest(r *gin.Context) (req model.VerifyUserRequest, err *helpers.CustomError) {
+func DecodeVerifyUserRequest(r *gin.Context) (req dto.VerifyUserRequest, err *helpers.CustomError) {
 	// Get the "email" from query parameters
 	email := r.Query("email")
 	if email == "" {
-		return model.VerifyUserRequest{}, helpers.BadRequest("Missing email in query parameters")
+		return dto.VerifyUserRequest{}, helpers.BadRequest("Missing email in query parameters")
 	}
 
 	req.Email = email
@@ -38,25 +39,25 @@ func DecodeVerifyUserRequest(r *gin.Context) (req model.VerifyUserRequest, err *
 	return req, nil
 }
 
-func DecodeLoginUserRequest(r *gin.Context) (req model.LoginUserRequest, err *helpers.CustomError) {
-	
+func DecodeLoginUserRequest(r *gin.Context) (req dto.LoginUserRequest, err *helpers.CustomError) {
+
 	if err := r.ShouldBindJSON(&req); err != nil {
-		return model.LoginUserRequest{}, helpers.BadRequest("Invalid request: " + err.Error())
+		return dto.LoginUserRequest{}, helpers.BadRequest("Invalid request: " + err.Error())
 	}
-	if req.Identifier!=""{
-		if utils.IsValidEmail(req.Identifier){
-			req.Email=req.Identifier
-		} else{
-			req.UserName=req.Identifier
+	if req.Identifier != "" {
+		if utils.IsValidEmail(req.Identifier) {
+			req.Email = req.Identifier
+		} else {
+			req.UserName = req.Identifier
 		}
 	}
 
 	if req.Email == "" && req.UserName == "" {
-		return model.LoginUserRequest{}, helpers.BadRequest("Missing email or user_name in request body")
+		return dto.LoginUserRequest{}, helpers.BadRequest("Missing email or user_name in request body")
 	}
 
 	if req.Password == "" {
-		return model.LoginUserRequest{}, helpers.BadRequest("Missing password in request body")
+		return dto.LoginUserRequest{}, helpers.BadRequest("Missing password in request body")
 	}
 
 	log.Println("Parsed login request with email:", req.Email, "and user_name:", req.UserName)

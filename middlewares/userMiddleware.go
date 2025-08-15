@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 	service "github.com/ChronoPlay/chronoplay-backend-service/services"
@@ -38,14 +39,14 @@ func (mw userMiddleware) RegisterUser(ctx context.Context, req model.User) (err 
 	return mw.next.RegisterUser(ctx, req)
 }
 
-func (mw userMiddleware) VerifyUser(ctx context.Context, req model.VerifyUserRequest) (err *helpers.CustomError) {
+func (mw userMiddleware) VerifyUser(ctx context.Context, req dto.VerifyUserRequest) (err *helpers.CustomError) {
 	defer func(begin time.Time) {
 		log.Printf("ctx:", ctx, " method:", "RegisterUser", " req:", req, " took:", time.Since(begin), " err:", err)
 	}(time.Now())
 	return mw.next.VerifyUser(ctx, req)
 }
 
-func (mw userMiddleware) LoginUser(ctx context.Context, req model.LoginUserRequest) (resp model.LoginUserResponse, err *helpers.CustomError) {
+func (mw userMiddleware) LoginUser(ctx context.Context, req dto.LoginUserRequest) (resp dto.LoginUserResponse, err *helpers.CustomError) {
 	defer func(begin time.Time) {
 		log.Printf("ctx:", ctx, " method:", "LoginUser", " req:", req, " took:", time.Since(begin), " err:", err, " resp:", resp)
 	}(time.Now())

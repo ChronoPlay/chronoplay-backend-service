@@ -10,6 +10,7 @@ type cardController struct {
 }
 
 type CardController interface {
+	AddCard(c *gin.Context)
 }
 
 func NewCardController(cardService service.CardService) CardController {
@@ -19,5 +20,6 @@ func NewCardController(cardService service.CardService) CardController {
 }
 
 func (cardCtrl *cardController) AddCard(c *gin.Context) {
+	// req, err := mapper.DecodeLoginUserRequest(c)
 
 }
