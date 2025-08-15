@@ -231,7 +231,7 @@ func ValidateTransferCardsRequest(req dto.TransferCardRequest) (err *helpers.Cus
 	if req.GivenBy == req.GivenTo {
 		return helpers.BadRequest("given by and given to user IDs cannot be the same")
 	}
-	if req.Status == model.TRANSACTION_STATUS_SUCCESS && req.UserId != req.GivenBy {
+	if req.Status == model.TRANSACTION_STATUS_SUCCESS && (req.GivenBy != 0 && req.UserId != req.GivenBy) {
 		return helpers.BadRequest("only the user who is giving the cards can mark it as successful")
 	}
 	return nil

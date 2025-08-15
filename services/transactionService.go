@@ -125,7 +125,7 @@ func (s *transactionService) TransferCards(ctx context.Context, req dto.Transfer
 	if err != nil {
 		return err
 	}
-	if req.GivenBy == 0 {
+	if req.GivenBy != 0 {
 		users, err = s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenBy})
 		if err != nil {
 			return err
@@ -244,11 +244,10 @@ func (s *transactionService) TransferCards(ctx context.Context, req dto.Transfer
 				for i, card := range cards {
 					if cardToTransfer.CardNumber == card.Number {
 						cardFound = true
-						if card.Available < cardToTransfer.Amount {
+						if card.Total-card.Occupied < cardToTransfer.Amount {
 							return helpers.BadRequest("Insufficient card balance")
 						}
 						cards[i].Occupied += cardToTransfer.Amount
-						cards[i].Available -= cardToTransfer.Amount
 						break
 					}
 				}
@@ -334,7 +333,7 @@ func (s *transactionService) IsCardTransactionPossible(ctx context.Context, req 
 	} else {
 		for cardNumber, amount := range req.CardsToTransferMap {
 			if card, exists := req.CardsMap[cardNumber]; exists {
-				if card.Available < amount {
+				if card.Total-card.Occupied < amount {
 					return helpers.BadRequest("Insufficient card balance for card: " + cardNumber)
 				}
 			} else {

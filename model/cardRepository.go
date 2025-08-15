@@ -18,7 +18,6 @@ type Card struct {
 	Description string             `bson:"description" json:"description"`
 	Occupied    uint32             `bson:"occupied" json:"occupied"`
 	Total       uint32             `bson:"total" json:"total"`
-	Available   uint32             `bson:"available" json:"available"`
 	Owners      []uint32           `bson:"owners" json:"owners"`
 	Creator     uint32             `bson:"creator" json:"creator"`
 	ImageUrl    string             `bson:"image_url" json:"image_url"`
@@ -96,16 +95,31 @@ func (repo *mongoCardRepo) GetCardByNumber(ctx context.Context, cardNumber strin
 }
 
 func (repo *mongoCardRepo) UpdateCard(ctx context.Context, card Card) *helpers.CustomError {
-	card.ID = primitive.NewObjectID() // Ensure ID is set for update
+	// ❌ Remove this — it breaks updates
+	// card.ID = primitive.NewObjectID()
+
 	updateData, err := bson.Marshal(card)
 	if err != nil {
-		return helpers.System(fmt.Sprintf("%s: %s", err.Error(), "Failed to marshal card for update"))
+		return helpers.System("failed to marshal card: " + err.Error())
 	}
 
-	_, err = repo.collection.UpdateOne(ctx, bson.M{"_id": card.ID}, bson.M{"$set": updateData})
-	if err != nil {
-		return helpers.System(fmt.Sprintf("%s: %s", err.Error(), "Failed to update card"))
+	var updateDoc bson.M
+	if err := bson.Unmarshal(updateData, &updateDoc); err != nil {
+		return helpers.System("failed to unmarshal card: " + err.Error())
 	}
+
+	// You might want to remove `_id` from updateDoc so Mongo doesn't complain
+	delete(updateDoc, "_id")
+
+	update := bson.M{
+		"$set": updateDoc,
+	}
+
+	_, err = repo.collection.UpdateByID(ctx, card.ID, update)
+	if err != nil {
+		return helpers.System(err.Error())
+	}
+
 	return nil
 }
 
@@ -115,15 +129,9 @@ func (repo *mongoCardRepo) UpdateCards(ctx context.Context, cards []Card) *helpe
 	}
 
 	for _, card := range cards {
-		card.ID = primitive.NewObjectID() // Ensure ID is set for update
-		updateData, err := bson.Marshal(card)
+		err := repo.UpdateCard(ctx, card)
 		if err != nil {
-			return helpers.System(fmt.Sprintf("%s: %s", err.Error(), "Failed to marshal card for update"))
-		}
-
-		_, err = repo.collection.UpdateOne(ctx, bson.M{"_id": card.ID}, bson.M{"$set": updateData})
-		if err != nil {
-			return helpers.System(fmt.Sprintf("%s: %s", err.Error(), "Failed to update card"))
+			return err
 		}
 	}
 	return nil
