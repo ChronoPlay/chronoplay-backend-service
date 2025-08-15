@@ -53,9 +53,10 @@ func (s *cardService) AddCard(ctx context.Context, req dto.AddCardRequest) *help
 		}
 		// Call repository method with sessCtx
 		err = s.cardRepo.AddCard(sessCtx, model.Card{
+			Name:        req.CardName,
 			Number:      req.CardNumber,
 			Description: req.CardDescription,
-			Available:   req.TotalCards,
+			Total:       req.TotalCards,
 			Creator:     req.UserId,
 		})
 		if err != nil {

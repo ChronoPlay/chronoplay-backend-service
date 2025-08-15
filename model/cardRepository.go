@@ -14,6 +14,7 @@ import (
 type Card struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Number      string             `bson:"number" json:"number"`
+	Name        string             `bson:"name" json:"name"`
 	Description string             `bson:"description" json:"description"`
 	Occupied    uint32             `bson:"occupied" json:"occupied"`
 	Total       uint32             `bson:"total" json:"total"`
