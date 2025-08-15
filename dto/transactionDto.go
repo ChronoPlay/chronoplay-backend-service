@@ -11,11 +11,12 @@ type TransferCashRequest struct {
 }
 
 type TransferCardRequest struct {
-	Cards   []TransferCard `json:"cards"`
-	GivenBy uint32         `json:"given_by"`
-	GivenTo uint32         `json:"given_to"`
-	Status  string         `json:"status"`
-	UserId  uint32         `json:"user_id"`
+	Cards    []TransferCard `json:"cards"`
+	GivenBy  uint32         `json:"given_by"`
+	GivenTo  uint32         `json:"given_to"`
+	Status   string         `json:"status"`
+	UserId   uint32         `json:"user_id"`
+	UserType string         `json:"user_type"`
 }
 
 type TransferCard struct {
@@ -35,6 +36,9 @@ type IsCashTransactionPossibleRequest struct {
 }
 
 type IsCardTransactionPossibleRequest struct {
-	User  model.User
-	Cards []TransferCard
+	GivenBy            uint32
+	User               model.User
+	CardsToTransferMap map[string]uint32
+	CardsOccupiedMap   map[string]uint32
+	CardsMap           map[string]model.Card
 }

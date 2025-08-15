@@ -37,6 +37,7 @@ type CardRepository interface {
 	UpdateCard(ctx context.Context, card Card) *helpers.CustomError
 	GetOwnersByCardNumber(ctx context.Context, cardNumber string) ([]uint32, *helpers.CustomError)
 	GetCards(ctx context.Context, req GetCardsRequest) ([]Card, *helpers.CustomError)
+	UpdateCards(ctx context.Context, cards []Card) *helpers.CustomError
 }
 
 type mongoCardRepo struct {
@@ -104,6 +105,26 @@ func (repo *mongoCardRepo) UpdateCard(ctx context.Context, card Card) *helpers.C
 	_, err = repo.collection.UpdateOne(ctx, bson.M{"_id": card.ID}, bson.M{"$set": updateData})
 	if err != nil {
 		return helpers.System(fmt.Sprintf("%s: %s", err.Error(), "Failed to update card"))
+	}
+	return nil
+}
+
+func (repo *mongoCardRepo) UpdateCards(ctx context.Context, cards []Card) *helpers.CustomError {
+	if len(cards) == 0 {
+		return helpers.BadRequest("No cards to update")
+	}
+
+	for _, card := range cards {
+		card.ID = primitive.NewObjectID() // Ensure ID is set for update
+		updateData, err := bson.Marshal(card)
+		if err != nil {
+			return helpers.System(fmt.Sprintf("%s: %s", err.Error(), "Failed to marshal card for update"))
+		}
+
+		_, err = repo.collection.UpdateOne(ctx, bson.M{"_id": card.ID}, bson.M{"$set": updateData})
+		if err != nil {
+			return helpers.System(fmt.Sprintf("%s: %s", err.Error(), "Failed to update card"))
+		}
 	}
 	return nil
 }

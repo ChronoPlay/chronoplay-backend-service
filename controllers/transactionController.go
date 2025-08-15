@@ -16,6 +16,7 @@ type TransactionController interface {
 	Transfercards(*gin.Context)
 	Exchange(*gin.Context)
 	GetTransactions(*gin.Context)
+	GiveCards(*gin.Context)
 }
 
 func NewTransactionController(transactionService service.TransactionService) TransactionController {
@@ -73,4 +74,26 @@ func (ctl *transactionController) Exchange(c *gin.Context) {
 }
 
 func (ctl *transactionController) GetTransactions(c *gin.Context) {
+}
+
+func (ctl *transactionController) GiveCards(c *gin.Context) {
+	req, err := mapper.DecodeTransferCardsRequest(c)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	ctx := c.Request.Context()
+	err = ctl.transactionService.GiveCards(ctx, req)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	c.JSON(200, constants.JsonResp{
+		Data:    "",
+		Message: "Cards given successfully",
+	})
 }
