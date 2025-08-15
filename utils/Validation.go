@@ -109,11 +109,12 @@ func CheckPasswordHash(password string, hashedPassword string) (err *helpers.Cus
 	return nil
 }
 
-func GenerateJwtToken(userId uint32) (jwtToken string, err *helpers.CustomError) {
+func GenerateJwtToken(userId uint32, userType string) (jwtToken string, err *helpers.CustomError) {
 	claims := jwt.MapClaims{
-		"user_id": userId,
-		"exp":     time.Now().Add(time.Hour * 1).Unix(),
-		"iat":     time.Now().Unix(),
+		"user_id":   userId,
+		"user_type": userType,
+		"exp":       time.Now().Add(time.Hour * 1).Unix(),
+		"iat":       time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -141,7 +142,7 @@ func ParseJwtToken(tokenString string) (userId uint32, userType string, err *hel
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || claims["user_id"] == nil {
+	if !ok || claims["user_id"] == nil || claims["user_type"] == nil {
 		return 0, userType, helpers.Unauthorized("invalid JWT claims")
 	}
 

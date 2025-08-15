@@ -174,7 +174,7 @@ func (s *userService) LoginUser(ctx context.Context, req dto.LoginUserRequest) (
 	}
 
 	log.Println("LoginUser: Generating JWT token for user:", users[0].UserId)
-	jwtToken, err := utils.GenerateJwtToken(users[0].UserId)
+	jwtToken, err := utils.GenerateJwtToken(users[0].UserId, users[0].UserType)
 	if err != nil {
 		log.Println("LoginUser: Failed to generate JWT token:", err)
 		return resp, helpers.System("Failed to generate JWT token: " + err.Error())

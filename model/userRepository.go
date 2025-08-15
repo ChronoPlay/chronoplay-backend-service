@@ -15,6 +15,7 @@ import (
 type User struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	UserId       uint32             `bson:"user_id" json:"user_id"`
+	UserType     string             `bson:"user_type" json:"user_type"` // e.g., "admin", "user"
 	Name         string             `bson:"name" json:"name"`
 	Email        string             `bson:"email" json:"email"`
 	Password     string             `bson:"password" json:"password"`
