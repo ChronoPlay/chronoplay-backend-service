@@ -222,7 +222,7 @@ func ValidateTransferCardsRequest(req dto.TransferCardRequest) (err *helpers.Cus
 	if len(req.Cards) == 0 {
 		return helpers.BadRequest("at least one card is required for transfer")
 	}
-	if req.GivenBy == 0 {
+	if req.GivenBy == 0 && !IsAdmin(req.UserType) {
 		return helpers.BadRequest("given by user ID is required")
 	}
 	if req.GivenTo == 0 {
@@ -231,8 +231,24 @@ func ValidateTransferCardsRequest(req dto.TransferCardRequest) (err *helpers.Cus
 	if req.GivenBy == req.GivenTo {
 		return helpers.BadRequest("given by and given to user IDs cannot be the same")
 	}
-	if req.Status == model.TRANSACTION_STATUS_SUCCESS && req.UserId != req.GivenBy {
+	if req.Status == model.TRANSACTION_STATUS_SUCCESS && (req.GivenBy != 0 && req.UserId != req.GivenBy) {
 		return helpers.BadRequest("only the user who is giving the cards can mark it as successful")
+	}
+	return nil
+}
+
+func ValidateGiveCardsRequest(req dto.TransferCardRequest) (err *helpers.CustomError) {
+	if len(req.Cards) == 0 {
+		return helpers.BadRequest("at least one card is required to give")
+	}
+	if req.GivenTo == 0 {
+		return helpers.BadRequest("given to user ID is required")
+	}
+	if req.GivenBy == req.GivenTo {
+		return helpers.BadRequest("given by and given to user IDs cannot be the same")
+	}
+	if req.UserId == 0 {
+		return helpers.BadRequest("user ID is required")
 	}
 	return nil
 }

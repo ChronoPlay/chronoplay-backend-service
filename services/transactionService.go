@@ -12,6 +12,7 @@ import (
 type TransactionService interface {
 	TransferCash(ctx context.Context, req dto.TransferCashRequest) *helpers.CustomError
 	TransferCards(ctx context.Context, req dto.TransferCardRequest) *helpers.CustomError
+	GiveCards(ctx context.Context, req dto.TransferCardRequest) *helpers.CustomError
 }
 
 type transactionService struct {
@@ -112,16 +113,26 @@ func (s *transactionService) TransferCash(ctx context.Context, req dto.TransferC
 }
 
 func (s *transactionService) TransferCards(ctx context.Context, req dto.TransferCardRequest) (err *helpers.CustomError) {
-	err = utils.ValidateTransferCardsRequest(req)
-	if err != nil {
-		return err
-	}
-	users, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenBy})
+	users, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.UserId})
 	if err != nil {
 		return err
 	}
 	if len(users) == 0 {
 		return helpers.NotFound("User not found")
+	}
+	req.UserType = users[0].UserType
+	err = utils.ValidateTransferCardsRequest(req)
+	if err != nil {
+		return err
+	}
+	if req.GivenBy != 0 {
+		users, err = s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenBy})
+		if err != nil {
+			return err
+		}
+		if len(users) == 0 {
+			return helpers.NotFound("User not found")
+		}
 	}
 	recieverUsers, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenTo})
 	if err != nil {
@@ -143,10 +154,24 @@ func (s *transactionService) TransferCards(ctx context.Context, req dto.Transfer
 	if len(cards) == 0 || len(cards) != len(req.Cards) {
 		return helpers.NotFound("Some cards not found")
 	}
-
+	cardsToTransferMap := make(map[string]uint32)
+	for _, card := range req.Cards {
+		cardsToTransferMap[card.CardNumber] = card.Amount
+	}
+	cardsOccupiedMap := make(map[string]uint32)
+	for _, card := range users[0].Cards {
+		cardsOccupiedMap[card.CardNumber] = card.Occupied
+	}
+	cardsMap := make(map[string]model.Card)
+	for _, card := range cards {
+		cardsMap[card.Number] = card
+	}
 	err = s.IsCardTransactionPossible(ctx, dto.IsCardTransactionPossibleRequest{
-		User:  users[0],
-		Cards: req.Cards,
+		GivenBy:            req.GivenBy,
+		User:               users[0],
+		CardsToTransferMap: cardsToTransferMap,
+		CardsOccupiedMap:   cardsOccupiedMap,
+		CardsMap:           cardsMap,
 	})
 	if err != nil {
 		return err
@@ -191,26 +216,49 @@ func (s *transactionService) TransferCards(ctx context.Context, req dto.Transfer
 		return err
 	}
 	if req.Status == model.TRANSACTION_STATUS_SUCCESS {
-		user := users[0]
-		for _, card := range req.Cards {
-			cardFound := false
-			for i, userCard := range user.Cards {
-				if userCard.CardNumber == card.CardNumber {
-					cardFound = true
-					if userCard.Occupied < card.Amount {
-						return helpers.BadRequest("Insufficient card balance")
+		if req.GivenBy != 0 {
+			user := users[0]
+			for _, card := range req.Cards {
+				cardFound := false
+				for i, userCard := range user.Cards {
+					if userCard.CardNumber == card.CardNumber {
+						cardFound = true
+						if userCard.Occupied < card.Amount {
+							return helpers.BadRequest("Insufficient card balance")
+						}
+						user.Cards[i].Occupied -= card.Amount
+						break
 					}
-					user.Cards[i].Occupied -= card.Amount
-					break
+				}
+				if !cardFound {
+					return helpers.BadRequest("User does not have the required card")
 				}
 			}
-			if !cardFound {
-				return helpers.BadRequest("User does not have the required card")
+			err = s.userRepo.UpdateUser(ctx, user)
+			if err != nil {
+				return err
 			}
-		}
-		err = s.userRepo.UpdateUser(ctx, user)
-		if err != nil {
-			return err
+		} else {
+			for _, cardToTransfer := range req.Cards {
+				cardFound := false
+				for i, card := range cards {
+					if cardToTransfer.CardNumber == card.Number {
+						cardFound = true
+						if card.Total-card.Occupied < cardToTransfer.Amount {
+							return helpers.BadRequest("Insufficient card balance")
+						}
+						cards[i].Occupied += cardToTransfer.Amount
+						break
+					}
+				}
+				if !cardFound {
+					return helpers.BadRequest("card does not exist: " + cardToTransfer.CardNumber)
+				}
+			}
+			err = s.cardRepo.UpdateCards(ctx, cards)
+			if err != nil {
+				return err
+			}
 		}
 		recieverUser := recieverUsers[0]
 		for _, card := range req.Cards {
@@ -237,6 +285,26 @@ func (s *transactionService) TransferCards(ctx context.Context, req dto.Transfer
 	return nil
 }
 
+func (s *transactionService) GiveCards(ctx context.Context, req dto.TransferCardRequest) (err *helpers.CustomError) {
+	err = utils.ValidateGiveCardsRequest(req)
+	if err != nil {
+		return err
+	}
+	users, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.UserId})
+	if err != nil {
+		return err
+	}
+	if len(users) == 0 {
+		return helpers.NotFound("User not found")
+	}
+	if !utils.IsAdmin(users[0].UserType) {
+		return helpers.Unauthorized("Only admin can give cards to users")
+	}
+
+	// Implement the logic to give cards
+	return nil
+}
+
 func (s *transactionService) Exchange(ctx context.Context, req dto.ExchangeRequest) {
 }
 
@@ -252,22 +320,25 @@ func (s *transactionService) IsCashTransactionPossible(ctx context.Context, req 
 }
 
 func (s *transactionService) IsCardTransactionPossible(ctx context.Context, req dto.IsCardTransactionPossibleRequest) *helpers.CustomError {
-	cardsOccupied := req.User.Cards
-	if len(cardsOccupied) == 0 {
-		return helpers.BadRequest("User does not have any cards")
-	}
-	for _, card := range req.Cards {
-		cardFound := false
-		for _, cardOccupied := range cardsOccupied {
-			if card.CardNumber == cardOccupied.CardNumber {
-				cardFound = true
-				if cardOccupied.Occupied < card.Amount {
-					return helpers.BadRequest("Insufficient card balance")
+	if req.GivenBy != 0 {
+		for cardNumber, amount := range req.CardsToTransferMap {
+			if occupied, exists := req.CardsOccupiedMap[cardNumber]; exists {
+				if occupied < amount {
+					return helpers.BadRequest("Insufficient card balance for card: " + cardNumber)
 				}
+			} else {
+				return helpers.BadRequest("Card not found: " + cardNumber)
 			}
 		}
-		if !cardFound {
-			return helpers.BadRequest("User does not have the required card")
+	} else {
+		for cardNumber, amount := range req.CardsToTransferMap {
+			if card, exists := req.CardsMap[cardNumber]; exists {
+				if card.Total-card.Occupied < amount {
+					return helpers.BadRequest("Insufficient card balance for card: " + cardNumber)
+				}
+			} else {
+				return helpers.BadRequest("Card not found: " + cardNumber)
+			}
 		}
 	}
 	return nil

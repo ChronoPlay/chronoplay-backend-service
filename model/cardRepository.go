@@ -18,7 +18,6 @@ type Card struct {
 	Description string             `bson:"description" json:"description"`
 	Occupied    uint32             `bson:"occupied" json:"occupied"`
 	Total       uint32             `bson:"total" json:"total"`
-	Available   uint32             `bson:"available" json:"available"`
 	Owners      []uint32           `bson:"owners" json:"owners"`
 	Creator     uint32             `bson:"creator" json:"creator"`
 	ImageUrl    string             `bson:"image_url" json:"image_url"`
@@ -37,6 +36,7 @@ type CardRepository interface {
 	UpdateCard(ctx context.Context, card Card) *helpers.CustomError
 	GetOwnersByCardNumber(ctx context.Context, cardNumber string) ([]uint32, *helpers.CustomError)
 	GetCards(ctx context.Context, req GetCardsRequest) ([]Card, *helpers.CustomError)
+	UpdateCards(ctx context.Context, cards []Card) *helpers.CustomError
 }
 
 type mongoCardRepo struct {
@@ -95,15 +95,44 @@ func (repo *mongoCardRepo) GetCardByNumber(ctx context.Context, cardNumber strin
 }
 
 func (repo *mongoCardRepo) UpdateCard(ctx context.Context, card Card) *helpers.CustomError {
-	card.ID = primitive.NewObjectID() // Ensure ID is set for update
+	// ❌ Remove this — it breaks updates
+	// card.ID = primitive.NewObjectID()
+
 	updateData, err := bson.Marshal(card)
 	if err != nil {
-		return helpers.System(fmt.Sprintf("%s: %s", err.Error(), "Failed to marshal card for update"))
+		return helpers.System("failed to marshal card: " + err.Error())
 	}
 
-	_, err = repo.collection.UpdateOne(ctx, bson.M{"_id": card.ID}, bson.M{"$set": updateData})
+	var updateDoc bson.M
+	if err := bson.Unmarshal(updateData, &updateDoc); err != nil {
+		return helpers.System("failed to unmarshal card: " + err.Error())
+	}
+
+	// You might want to remove `_id` from updateDoc so Mongo doesn't complain
+	delete(updateDoc, "_id")
+
+	update := bson.M{
+		"$set": updateDoc,
+	}
+
+	_, err = repo.collection.UpdateByID(ctx, card.ID, update)
 	if err != nil {
-		return helpers.System(fmt.Sprintf("%s: %s", err.Error(), "Failed to update card"))
+		return helpers.System(err.Error())
+	}
+
+	return nil
+}
+
+func (repo *mongoCardRepo) UpdateCards(ctx context.Context, cards []Card) *helpers.CustomError {
+	if len(cards) == 0 {
+		return helpers.BadRequest("No cards to update")
+	}
+
+	for _, card := range cards {
+		err := repo.UpdateCard(ctx, card)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

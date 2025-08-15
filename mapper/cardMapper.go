@@ -28,7 +28,7 @@ func DecodeAddCardRequest(c *gin.Context) (dto.AddCardRequest, *helpers.CustomEr
 func DecodeGetCardRequest(c *gin.Context) (dto.GetCardRequest, *helpers.CustomError) {
 	var req dto.GetCardRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		return dto.GetCardRequest{}, helpers.BadRequest("Invalid request body")
+		return dto.GetCardRequest{}, helpers.BadRequest("Invalid request body" + err.Error())
 	}
 	return req, nil
 }
@@ -38,7 +38,6 @@ func EncodeGetCardResponse(req *model.Card) (res dto.GetCardResponse) {
 	res.Description = req.Description
 	res.Number = req.Number
 	res.Total = req.Total
-	res.Available = req.Available
 	res.Occupied = req.Occupied
 	res.ImageUrl = req.ImageUrl
 	return res
