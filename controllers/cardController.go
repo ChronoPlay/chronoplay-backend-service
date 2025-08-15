@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"github.com/ChronoPlay/chronoplay-backend-service/constants"
+	"github.com/ChronoPlay/chronoplay-backend-service/mapper"
 	service "github.com/ChronoPlay/chronoplay-backend-service/services"
 	"github.com/gin-gonic/gin"
 )
@@ -20,6 +22,23 @@ func NewCardController(cardService service.CardService) CardController {
 }
 
 func (cardCtrl *cardController) AddCard(c *gin.Context) {
-	// req, err := mapper.DecodeLoginUserRequest(c)
-
+	req, err := mapper.DecodeAddCardRequest(c)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	ctx := c.Request.Context()
+	err = cardCtrl.cardService.AddCard(ctx, req)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	c.JSON(200, constants.JsonResp{
+		Data:    "",
+		Message: "Card added successfully",
+	})
 }

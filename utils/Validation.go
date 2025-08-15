@@ -149,3 +149,29 @@ func ParseJwtToken(tokenString string) (userId uint32, userType string, err *hel
 	userType = claims["user_type"].(string)
 	return userId, userType, nil
 }
+
+func IsAdmin(userType string) bool {
+	return strings.EqualFold(userType, model.USER_TYPE_ADMIN)
+}
+
+func ValidateAddCardRequest(req dto.AddCardRequest) (err *helpers.CustomError) {
+	if len(strings.TrimSpace(req.CardNumber)) == 0 {
+		return helpers.BadRequest("card number is required")
+	}
+	if len(strings.TrimSpace(req.CardDescription)) == 0 {
+		return helpers.BadRequest("card description is required")
+	}
+	if req.TotalCards == 0 {
+		return helpers.BadRequest("total cards must be greater than zero")
+	}
+	if req.UserId == 0 {
+		return helpers.BadRequest("user ID is required")
+	}
+	if len(strings.TrimSpace(req.UserType)) == 0 {
+		return helpers.BadRequest("user type is required")
+	}
+	if !IsAdmin(req.UserType) {
+		return helpers.Unauthorized("only admin can add cards")
+	}
+	return nil
+}

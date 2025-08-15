@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 	"go.mongodb.org/mongo-driver/bson"
@@ -22,11 +23,13 @@ type Card struct {
 }
 
 type CardRepository interface {
+	GetCollection() *mongo.Collection
 	AddCard(ctx context.Context, card Card) *helpers.CustomError
 	GetAllCards(ctx context.Context) ([]Card, *helpers.CustomError)
 	GetCardByNumber(ctx context.Context, cardNumber string) (*Card, *helpers.CustomError)
 	UpdateCard(ctx context.Context, card Card) *helpers.CustomError
 	GetOwnersByCardNumber(ctx context.Context, cardNumber string) ([]uint32, *helpers.CustomError)
+	GetCards(ctx context.Context, req Card) ([]Card, *helpers.CustomError)
 }
 
 type mongoCardRepo struct {
@@ -35,6 +38,10 @@ type mongoCardRepo struct {
 
 func NewCardRepository(col *mongo.Collection) CardRepository {
 	return &mongoCardRepo{collection: col}
+}
+
+func (r *mongoCardRepo) GetCollection() *mongo.Collection {
+	return r.collection
 }
 
 func (repo *mongoCardRepo) AddCard(ctx context.Context, card Card) *helpers.CustomError {
@@ -107,4 +114,49 @@ func (repo *mongoCardRepo) GetOwnersByCardNumber(ctx context.Context, cardNumber
 		return nil, helpers.NotFound("no owners found for this card")
 	}
 	return card.Owners, nil
+}
+
+func (repo *mongoCardRepo) GetCards(ctx context.Context, req Card) ([]Card, *helpers.CustomError) {
+	cards := []Card{}
+	isValid := false
+	conditions := []bson.M{}
+
+	if req.Number != "" {
+		conditions = append(conditions, bson.M{
+			"number": req.Number,
+		})
+		isValid = true
+	}
+	if req.Description != "" {
+		conditions = append(conditions, bson.M{
+			"description": req.Description,
+		})
+		isValid = true
+	}
+	if isValid {
+		filter := bson.M{}
+		if len(conditions) > 0 {
+			filter["$and"] = conditions
+		}
+		cursor, err := repo.collection.Find(ctx, filter)
+		if err != nil {
+			return cards, helpers.System(err.Error())
+		}
+
+		defer cursor.Close(ctx)
+
+		for cursor.Next(ctx) {
+			var card Card
+			if err := cursor.Decode(&card); err != nil {
+				log.Println("Decode error:", err)
+				continue
+			}
+			cards = append(cards, card)
+		}
+
+		if err := cursor.Err(); err != nil {
+			return cards, helpers.System(err.Error())
+		}
+	}
+	return cards, nil
 }
