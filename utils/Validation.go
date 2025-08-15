@@ -171,6 +171,9 @@ func ValidateAddCardRequest(req dto.AddCardRequest) (err *helpers.CustomError) {
 	if len(strings.TrimSpace(req.UserType)) == 0 {
 		return helpers.BadRequest("user type is required")
 	}
+	if req.Image == nil {
+		return helpers.BadRequest("image is required")
+	}
 	if !IsAdmin(req.UserType) {
 		return helpers.Unauthorized("only admin can add cards")
 	}

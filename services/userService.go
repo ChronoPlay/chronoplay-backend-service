@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -42,6 +43,7 @@ func (s *userService) GetUser(ctx context.Context, req model.User) (resp *model.
 
 func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomError) {
 	err = utils.ValidateUser(req)
+	fmt.Println("req:", req)
 	if err != nil {
 		return err
 	}

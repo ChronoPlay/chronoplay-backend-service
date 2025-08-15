@@ -30,23 +30,27 @@ func main() {
 	if dbName == "" {
 		log.Fatal("MONGO_DB_NAME environment variable not set")
 	}
-	db := database.MongoClient.Database(dbName).Collection("users")
+	usersDb := database.MongoClient.Database(dbName).Collection("users")
+	cardDb := database.MongoClient.Database(dbName).Collection("cards")
+	loanDb := database.MongoClient.Database(dbName).Collection("loans")
+	cardTransactionDb := database.MongoClient.Database(dbName).Collection("card_transactions")
+	cashTransactionDb := database.MongoClient.Database(dbName).Collection("cash_transactions")
 
 	// Setup dependency injection for user
-	userRepo := models.NewUserRepository(db)
+	userRepo := models.NewUserRepository(usersDb)
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
-	cardRepo := models.NewCardRepository(db)
-	cardService := services.NewCardService(cardRepo)
+	cardRepo := models.NewCardRepository(cardDb)
+	cardService := services.NewCardService(cardRepo, userRepo)
 	cardController := controllers.NewCardController(cardService)
 
-	loanRepo := models.NewLoanRepository(db)
+	loanRepo := models.NewLoanRepository(loanDb)
 	loanService := services.NewLoanService(loanRepo)
 	loanController := controllers.NewLoanController(loanService)
 
-	cardTransactionRepo := models.NewCardTransactionRepository(db)
-	cashTransactionRepo := models.NewCashTransactionRepository(db)
+	cardTransactionRepo := models.NewCardTransactionRepository(cardTransactionDb)
+	cashTransactionRepo := models.NewCashTransactionRepository(cashTransactionDb)
 	transactionService := services.NewTransactionService(cardTransactionRepo, cashTransactionRepo)
 	transactionController := controllers.NewTransactionController(transactionService)
 
