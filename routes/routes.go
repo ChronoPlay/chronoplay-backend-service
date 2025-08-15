@@ -23,6 +23,7 @@ func SetupRoutes(r *gin.Engine, userController controller.UserController, cardCo
 
 	{
 		user.GET("/get_user", userController.GetUser)
+		user.GET("/search_user",userController.SearchUser)
 	}
 
 	card := r.Group("/card", middleware.AuthorizeUser(), middleware.CustomContextMiddleware())
