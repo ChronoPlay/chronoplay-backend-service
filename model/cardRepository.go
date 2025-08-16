@@ -95,9 +95,6 @@ func (repo *mongoCardRepo) GetCardByNumber(ctx context.Context, cardNumber strin
 }
 
 func (repo *mongoCardRepo) UpdateCard(ctx context.Context, card Card) *helpers.CustomError {
-	// ❌ Remove this — it breaks updates
-	// card.ID = primitive.NewObjectID()
-
 	updateData, err := bson.Marshal(card)
 	if err != nil {
 		return helpers.System("failed to marshal card: " + err.Error())
