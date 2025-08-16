@@ -19,6 +19,7 @@ type UserService interface {
 	VerifyUser(ctx context.Context, req dto.VerifyUserRequest) (err *helpers.CustomError)
 	LoginUser(ctx context.Context, req dto.LoginUserRequest) (dto.LoginUserResponse, *helpers.CustomError)
 	AddFriend(ctx context.Context, req *dto.AddFriendRequest) *helpers.CustomError
+	GetFriends(ctx context.Context, req *dto.GetFriendsRequest) ([]dto.Friend, *helpers.CustomError)
 }
 
 type userService struct {
@@ -232,4 +233,36 @@ func (s *userService) AddFriend(ctx context.Context, req *dto.AddFriendRequest) 
 	}
 
 	return nil
+}
+func (s *userService)GetFriends(ctx context.Context, req *dto.GetFriendsRequest) ([]dto.Friend, *helpers.CustomError){
+	users,err:=s.userRepo.GetUsers(ctx,model.User{
+		UserId:req.UserID,
+	})
+	if err!=nil{
+		return nil,err
+	}
+	if len(users)==0{
+		return nil,helpers.NotFound("user not found ")
+	}
+	curUser := users[0]
+	var friends []dto.Friend
+	for _, fid := range curUser.Friends {
+		friendUsers, ferr := s.userRepo.GetUsers(ctx, model.User{
+			UserId: fid,
+		})
+		if ferr != nil {
+			return nil, ferr
+		}
+		if len(friendUsers) == 0 {
+			continue 
+		}
+		friend := friendUsers[0]
+		friends = append(friends, dto.Friend{
+			UserID:   friend.UserId,
+			UserName: friend.UserName,
+			Email:    friend.Email,
+		})
+	}
+
+	return friends, nil
 }

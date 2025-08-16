@@ -25,6 +25,7 @@ func SetupRoutes(r *gin.Engine, userController controller.UserController, cardCo
 		user.GET("/user", userController.GetUser)
 		user.GET("/get_user", userController.GetUserById)
 		user.PATCH("/add_friend", userController.AddFriend)
+		user.GET("/get_friends",userController.GetFriends)
 	}
 
 	card := r.Group("/card", middleware.AuthorizeUser(), middleware.CustomContextMiddleware())

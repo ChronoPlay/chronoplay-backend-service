@@ -26,6 +26,7 @@ type UserController interface {
 	GetUser(*gin.Context)
 	GetUserById(*gin.Context)
 	AddFriend(*gin.Context)
+	GetFriends(c *gin.Context)
 }
 
 func NewUserController(userService service.UserService) UserController {
@@ -160,8 +161,8 @@ func (ctl *userController) AddFriend(c *gin.Context) {
 	CurUserId, _ := c.Get("UserID")
 	FriendUserId := c.Query("user_id")
 
-	req,err:=mapper.DecodeAddFriendRequest(CurUserId,FriendUserId)
-	if err!=nil{
+	req, err := mapper.DecodeAddFriendRequest(CurUserId, FriendUserId)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.AddFriendResponse{
 			Message: "Error decoding user_id: " + err.Error(),
 		})
@@ -176,6 +177,29 @@ func (ctl *userController) AddFriend(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, constants.JsonResp{
 		Message: "friend added succesfully",
+	})
+
+}
+func (ctl *userController) GetFriends(c *gin.Context) {
+	ctx := c.Request.Context()
+	curUserId, _ := c.Get("UserID")
+	uid, ok := curUserId.(uint32)
+	if !ok {
+		c.JSON(http.StatusBadRequest, dto.GetFriendsResponse{
+			Friends: []dto.Friend{},
+		})
+		return
+	}
+	req := &dto.GetFriendsRequest{UserID: uid}
+	friends, nerr := ctl.userService.GetFriends(ctx, req)
+	if nerr != nil {
+		c.JSON(int(nerr.Code), constants.JsonResp{
+			Message: nerr.Message,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, dto.GetFriendsResponse{
+		Friends: friends,
 	})
 
 }

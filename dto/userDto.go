@@ -35,3 +35,16 @@ type AddFriendRequest struct {
 type AddFriendResponse struct {
 	Message string `bson:"message" json:"message"`
 }
+
+type GetFriendsRequest struct {
+	UserID uint32 `bson:"user_id" json:"user_id"`
+}
+
+type Friend struct {
+	UserID   uint32 `bson:"user_id" json:"user_id"`
+	UserName string `bson:"user_name" json:"user_name"`
+	Email    string `bson:"email" json:"email"`
+}
+type GetFriendsResponse struct{
+	Friends []Friend `bson:"friends" json:"friends"`
+}
