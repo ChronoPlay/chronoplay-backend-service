@@ -156,8 +156,8 @@ func (ctl *userController) GetUserById(c *gin.Context) {
 }
 func (ctl *userController) AddFriend(c *gin.Context) {
 	ctx := c.Request.Context()
-	CurUserId, _ := c.Get("user_id")     //current user
-	FriendUserId := c.Query(("user_id")) //frnd to add
+	CurUserId, _ := c.Get("UserID")
+	FriendUserId := c.Query("user_id")
 	fid, perr := strconv.ParseInt(FriendUserId, 10, 32)
 	if perr != nil {
 		c.JSON(http.StatusBadRequest, constants.JsonResp{

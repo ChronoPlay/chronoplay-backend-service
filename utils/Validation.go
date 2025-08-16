@@ -109,12 +109,11 @@ func CheckPasswordHash(password string, hashedPassword string) (err *helpers.Cus
 	return nil
 }
 
-func GenerateJwtToken(userId uint32, userType string) (jwtToken string, err *helpers.CustomError) {
+func GenerateJwtToken(userId uint32) (jwtToken string, err *helpers.CustomError) {
 	claims := jwt.MapClaims{
-		"user_id":   userId,
-		"user_type": userType,
-		"exp":       time.Now().Add(time.Hour * 1).Unix(),
-		"iat":       time.Now().Unix(),
+		"user_id": userId,
+		"exp":     time.Now().Add(time.Hour * 1).Unix(),
+		"iat":     time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -128,7 +127,7 @@ func GenerateJwtToken(userId uint32, userType string) (jwtToken string, err *hel
 	return signedToken, nil
 }
 
-func ParseJwtToken(tokenString string) (userId uint32, userType string, err *helpers.CustomError) {
+func ParseJwtToken(tokenString string) (userId uint32, err *helpers.CustomError) {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	token, terr := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -138,17 +137,16 @@ func ParseJwtToken(tokenString string) (userId uint32, userType string, err *hel
 	})
 
 	if terr != nil || !token.Valid {
-		return 0, userType, helpers.Unauthorized("invalid JWT token: " + terr.Error())
+		return 0, helpers.Unauthorized("invalid JWT token: " + terr.Error())
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || claims["user_id"] == nil || claims["user_type"] == nil {
-		return 0, userType, helpers.Unauthorized("invalid JWT claims")
+	if !ok || claims["user_id"] == nil {
+		return 0, helpers.Unauthorized("invalid JWT claims")
 	}
 
 	userId = uint32(claims["user_id"].(float64))
-	//userType = claims["user_type"].(string)
-	return userId, userType, nil
+	return userId, nil
 }
 
 func IsAdmin(userType string) bool {
