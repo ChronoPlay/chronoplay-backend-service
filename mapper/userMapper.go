@@ -2,7 +2,9 @@ package mapper
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -69,4 +71,21 @@ func EncodeGetUserResponse(req *model.User) (res dto.GetUserResponse) {
 	res.Name = req.Name
 	res.UserName = req.UserName
 	return res
+}
+
+func DecodeAddFriendRequest(curUserId interface{}, friendUserId string) (*dto.AddFriendRequest, error) {
+	uid, ok := curUserId.(uint32)
+	if !ok {
+		return nil, errors.New("invalid current user id")
+	}
+
+	fid, err := strconv.ParseInt(friendUserId, 10, 32)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.AddFriendRequest{
+		UserID:   uid,
+		FriendID: uint32(fid),
+	}, nil
 }
