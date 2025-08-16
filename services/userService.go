@@ -18,6 +18,7 @@ type UserService interface {
 	RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomError)
 	VerifyUser(ctx context.Context, req dto.VerifyUserRequest) (err *helpers.CustomError)
 	LoginUser(ctx context.Context, req dto.LoginUserRequest) (dto.LoginUserResponse, *helpers.CustomError)
+	AddFriend(ctx context.Context, userId uint32, fid uint32) *helpers.CustomError
 }
 
 type userService struct {
@@ -186,4 +187,46 @@ func (s *userService) LoginUser(ctx context.Context, req dto.LoginUserRequest) (
 	return dto.LoginUserResponse{
 		Token: jwtToken,
 	}, nil
+}
+
+// add friend
+func (s *userService) AddFriend(ctx context.Context, userId uint32, fid uint32) *helpers.CustomError {
+	curUsers, err := s.userRepo.GetUsers(ctx, model.User{ //curUser now have current user data
+		UserId: userId,
+	})
+	if err != nil {
+		return err
+	}
+	if len(curUsers) == 0 {
+		return helpers.NotFound("current user not found")
+	}
+	curUser := curUsers[0]
+	friends, ferr := s.userRepo.GetUsers(ctx, model.User{ //friend now have to be added user's data
+		UserId: fid,
+	})
+	if ferr != nil {
+		return ferr
+	}
+	if len(friends) == 0 {
+		return helpers.BadRequest("the user doesn't exists")
+	}
+	curUserFriends := curUser.Friends
+	isfound := false
+	for _, friend := range curUserFriends {
+		if friend == fid {
+			isfound = true
+			break
+		}
+	}
+	if isfound {
+		return helpers.BadRequest("user is already a friend with current user")
+	}
+	curUserFriends = append(curUserFriends, fid)
+	curUser.Friends = curUserFriends
+	ferr = s.userRepo.UpdateUser(ctx, curUser)
+	if ferr != nil {
+		return ferr
+	}
+
+	return nil
 }
