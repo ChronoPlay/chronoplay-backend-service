@@ -26,6 +26,7 @@ type User struct {
 	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt    time.Time          `bson:"updated_at" json:"updated_at"`
 	Cards        []CardOccupied     `bson:"cards" json:"cards"`
+	Friends      []uint32           `bson:"friends" json:"friends"`
 }
 
 type CardOccupied struct {
@@ -39,6 +40,7 @@ type UserRepository interface {
 	GetCollection() *mongo.Collection
 	GetUsers(ctx context.Context, req User) ([]User, *helpers.CustomError)
 	UpdateUser(ctx context.Context, user User) *helpers.CustomError
+	UpdateField(ctx context.Context, filter bson.M, update bson.M) *helpers.CustomError
 }
 
 type mongoUserRepo struct {
@@ -103,6 +105,15 @@ func (r *mongoUserRepo) UpdateUser(ctx context.Context, user User) *helpers.Cust
 	_, err = r.collection.UpdateByID(ctx, user.ID, update)
 	if err != nil {
 		return helpers.System(err.Error())
+	}
+	return nil
+}
+
+// for partial update
+func (r *mongoUserRepo) UpdateField(ctx context.Context, filter bson.M, update bson.M) *helpers.CustomError {
+	_, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return helpers.System("failed to update field: " + err.Error())
 	}
 	return nil
 }

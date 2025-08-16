@@ -52,3 +52,9 @@ func (mw userMiddleware) LoginUser(ctx context.Context, req dto.LoginUserRequest
 	}(time.Now())
 	return mw.next.LoginUser(ctx, req)
 }
+func (mw userMiddleware) AddFriend(ctx context.Context, userId uint32, fid uint32) (err *helpers.CustomError) {
+	defer func(begin time.Time) {
+		log.Printf("ctx:", ctx, " method:", "LoginUser", " userID:", userId, "fid:", fid, " took:", time.Since(begin), " err:", err)
+	}(time.Now())
+	return mw.next.AddFriend(ctx, userId, fid)
+}

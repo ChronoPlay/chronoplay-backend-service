@@ -24,6 +24,7 @@ type UserController interface {
 	LoginUser(*gin.Context)
 	GetUser(*gin.Context)
 	GetUserById(*gin.Context)
+	AddFriend(*gin.Context)
 }
 
 func NewUserController(userService service.UserService) UserController {
@@ -127,7 +128,7 @@ func (ctl *userController) GetUserById(c *gin.Context) {
 	id64, perr := strconv.ParseUint(userId, 10, 32)
 	if perr != nil {
 		c.JSON(http.StatusBadRequest, constants.JsonResp{
-			Message: "Error while parsing user_id"+perr.Error(),
+			Message: "Error while parsing user_id" + perr.Error(),
 		})
 		return
 	}
@@ -152,4 +153,27 @@ func (ctl *userController) GetUserById(c *gin.Context) {
 		Data:    data,
 		Message: "User details fetched successfully",
 	})
+}
+func (ctl *userController) AddFriend(c *gin.Context) {
+	ctx := c.Request.Context()
+	CurUserId, _ := c.Get("user_id")     //current user
+	FriendUserId := c.Query(("user_id")) //frnd to add
+	fid, perr := strconv.ParseInt(FriendUserId, 10, 32)
+	if perr != nil {
+		c.JSON(http.StatusBadRequest, constants.JsonResp{
+			Message: "Error while parsing user_id" + perr.Error(),
+		})
+		return
+	}
+	nerr := ctl.userService.AddFriend(ctx, CurUserId.(uint32), uint32(fid))
+	if nerr != nil {
+		c.JSON(int(nerr.Code), constants.JsonResp{
+			Message: nerr.Message,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, constants.JsonResp{
+		Message: "friend added succesfully",
+	})
+
 }
