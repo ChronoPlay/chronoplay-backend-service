@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/constants"
+	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/mapper"
 	"github.com/ChronoPlay/chronoplay-backend-service/model"
 	service "github.com/ChronoPlay/chronoplay-backend-service/services"
@@ -25,6 +26,8 @@ type UserController interface {
 	GetUser(*gin.Context)
 	GetUserById(*gin.Context)
 	AddFriend(*gin.Context)
+	GetFriends(c *gin.Context)
+	RemoveFriend(c *gin.Context)
 }
 
 func NewUserController(userService service.UserService) UserController {
@@ -158,14 +161,15 @@ func (ctl *userController) AddFriend(c *gin.Context) {
 	ctx := c.Request.Context()
 	CurUserId, _ := c.Get("UserID")
 	FriendUserId := c.Query("user_id")
-	fid, perr := strconv.ParseInt(FriendUserId, 10, 32)
-	if perr != nil {
-		c.JSON(http.StatusBadRequest, constants.JsonResp{
-			Message: "Error while parsing user_id" + perr.Error(),
+
+	req, err := mapper.DecodeAddFriendRequest(CurUserId, FriendUserId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.AddFriendResponse{
+			Message: "Error decoding user_id: " + err.Error(),
 		})
 		return
 	}
-	nerr := ctl.userService.AddFriend(ctx, CurUserId.(uint32), uint32(fid))
+	nerr := ctl.userService.AddFriend(ctx, req)
 	if nerr != nil {
 		c.JSON(int(nerr.Code), constants.JsonResp{
 			Message: nerr.Message,
@@ -174,6 +178,52 @@ func (ctl *userController) AddFriend(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, constants.JsonResp{
 		Message: "friend added succesfully",
+	})
+
+}
+func (ctl *userController) GetFriends(c *gin.Context) {
+	ctx := c.Request.Context()
+	curUserId, _ := c.Get("UserID")
+	uid, ok := curUserId.(uint32)
+	if !ok {
+		c.JSON(http.StatusBadRequest, dto.GetFriendsResponse{
+			Friends: []dto.Friend{},
+		})
+		return
+	}
+	req := &dto.GetFriendsRequest{UserID: uid}
+	friends, nerr := ctl.userService.GetFriends(ctx, req)
+	if nerr != nil {
+		c.JSON(int(nerr.Code), constants.JsonResp{
+			Message: nerr.Message,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, dto.GetFriendsResponse{
+		Friends: friends,
+	})
+}
+func (ctl *userController) RemoveFriend(c *gin.Context) {
+	ctx := c.Request.Context()
+	CurUserId, _ := c.Get("UserID")
+	FriendUserId := c.Query("user_id")
+
+	req, err := mapper.DecodeAddFriendRequest(CurUserId, FriendUserId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.AddFriendResponse{
+			Message: "Error decoding user_id: " + err.Error(),
+		})
+		return
+	}
+	nerr := ctl.userService.RemoveFriend(ctx, req)
+	if nerr != nil {
+		c.JSON(int(nerr.Code), constants.JsonResp{
+			Message: nerr.Message,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, constants.JsonResp{
+		Message: "friend removed succesfully",
 	})
 
 }
