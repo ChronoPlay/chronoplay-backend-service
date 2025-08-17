@@ -20,6 +20,7 @@ type UserService interface {
 	LoginUser(ctx context.Context, req dto.LoginUserRequest) (dto.LoginUserResponse, *helpers.CustomError)
 	AddFriend(ctx context.Context, req *dto.AddFriendRequest) *helpers.CustomError
 	GetFriends(ctx context.Context, req *dto.GetFriendsRequest) ([]dto.Friend, *helpers.CustomError)
+	RemoveFriend(ctx context.Context, req *dto.AddFriendRequest) *helpers.CustomError
 }
 
 type userService struct {
@@ -234,15 +235,15 @@ func (s *userService) AddFriend(ctx context.Context, req *dto.AddFriendRequest) 
 
 	return nil
 }
-func (s *userService)GetFriends(ctx context.Context, req *dto.GetFriendsRequest) ([]dto.Friend, *helpers.CustomError){
-	users,err:=s.userRepo.GetUsers(ctx,model.User{
-		UserId:req.UserID,
+func (s *userService) GetFriends(ctx context.Context, req *dto.GetFriendsRequest) ([]dto.Friend, *helpers.CustomError) {
+	users, err := s.userRepo.GetUsers(ctx, model.User{
+		UserId: req.UserID,
 	})
-	if err!=nil{
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
-	if len(users)==0{
-		return nil,helpers.NotFound("user not found ")
+	if len(users) == 0 {
+		return nil, helpers.NotFound("user not found ")
 	}
 	curUser := users[0]
 	var friends []dto.Friend
@@ -254,7 +255,7 @@ func (s *userService)GetFriends(ctx context.Context, req *dto.GetFriendsRequest)
 			return nil, ferr
 		}
 		if len(friendUsers) == 0 {
-			continue 
+			continue
 		}
 		friend := friendUsers[0]
 		friends = append(friends, dto.Friend{
@@ -265,4 +266,49 @@ func (s *userService)GetFriends(ctx context.Context, req *dto.GetFriendsRequest)
 	}
 
 	return friends, nil
+}
+
+func (s *userService) RemoveFriend(ctx context.Context, req *dto.AddFriendRequest) *helpers.CustomError {
+	if req.UserID == req.FriendID {
+		return helpers.BadRequest("user cannot remove themselves as a friend")
+	}
+	curUsers, err := s.userRepo.GetUsers(ctx, model.User{ //curUser now have current user data
+		UserId: req.UserID,
+	})
+	if err != nil {
+		return err
+	}
+	if len(curUsers) == 0 {
+		return helpers.NotFound("current user not found")
+	}
+	curUser := curUsers[0]
+	friends, ferr := s.userRepo.GetUsers(ctx, model.User{ //friend now have to be added user's data
+		UserId: req.FriendID,
+	})
+	if ferr != nil {
+		return ferr
+	}
+	if len(friends) == 0 {
+		return helpers.BadRequest("the user doesn't exists")
+	}
+	curUserFriends := curUser.Friends
+	isfound := false
+	newFriends := []uint32{}
+
+	for _, friend := range curUserFriends {
+		if friend == req.FriendID {
+			isfound = true
+			continue
+		}
+		newFriends = append(newFriends, friend)
+	}
+	if !isfound {
+		return helpers.BadRequest("user is not a friend with current user")
+	}
+	curUser.Friends = newFriends
+	ferr = s.userRepo.UpdateUser(ctx, curUser)
+	if ferr != nil {
+		return ferr
+	}
+	return nil
 }

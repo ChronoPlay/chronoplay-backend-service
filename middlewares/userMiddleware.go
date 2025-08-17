@@ -69,3 +69,11 @@ func (mw userMiddleware) GetFriends(ctx context.Context, req *dto.GetFriendsRequ
 
 	return mw.next.GetFriends(ctx, req)
 }
+func (mw userMiddleware) RemoveFriend(ctx context.Context, req *dto.AddFriendRequest) (err *helpers.CustomError) {
+	defer func(begin time.Time) {
+		log.Printf("ctx: %v method: AddFriend userID: %d fid: %d took: %s err: %v",
+			ctx, req.UserID, req.FriendID, time.Since(begin), err)
+	}(time.Now())
+
+	return mw.next.RemoveFriend(ctx, req)
+}

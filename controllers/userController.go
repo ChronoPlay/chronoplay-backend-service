@@ -27,6 +27,7 @@ type UserController interface {
 	GetUserById(*gin.Context)
 	AddFriend(*gin.Context)
 	GetFriends(c *gin.Context)
+	RemoveFriend(c *gin.Context)
 }
 
 func NewUserController(userService service.UserService) UserController {
@@ -200,6 +201,29 @@ func (ctl *userController) GetFriends(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, dto.GetFriendsResponse{
 		Friends: friends,
+	})
+}
+func (ctl *userController) RemoveFriend(c *gin.Context) {
+	ctx := c.Request.Context()
+	CurUserId, _ := c.Get("UserID")
+	FriendUserId := c.Query("user_id")
+
+	req, err := mapper.DecodeAddFriendRequest(CurUserId, FriendUserId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.AddFriendResponse{
+			Message: "Error decoding user_id: " + err.Error(),
+		})
+		return
+	}
+	nerr := ctl.userService.RemoveFriend(ctx, req)
+	if nerr != nil {
+		c.JSON(int(nerr.Code), constants.JsonResp{
+			Message: nerr.Message,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, constants.JsonResp{
+		Message: "friend removed succesfully",
 	})
 
 }
