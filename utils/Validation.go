@@ -189,7 +189,7 @@ func ValidateTransferCashRequest(req dto.TransferCashRequest) (err *helpers.Cust
 	if req.Amount <= 0 {
 		return helpers.BadRequest("amount must be greater than zero")
 	}
-	if req.GivenBy == 0 {
+	if req.GivenBy == 0 && !IsAdmin(req.UserType) {
 		return helpers.BadRequest("given by user ID is required")
 	}
 	if req.GivenTo == 0 {
@@ -201,7 +201,7 @@ func ValidateTransferCashRequest(req dto.TransferCashRequest) (err *helpers.Cust
 	if req.UserId == 0 {
 		return helpers.BadRequest("user ID is required")
 	}
-	if req.Status == model.TRANSACTION_STATUS_SUCCESS && req.UserId != req.GivenBy {
+	if req.Status == model.TRANSACTION_STATUS_SUCCESS && req.UserId != req.GivenBy && req.GivenBy != 0 {
 		return helpers.BadRequest("only the user who is giving the amount can mark it as successful")
 	}
 	return nil

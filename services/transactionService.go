@@ -32,17 +32,27 @@ func NewTransactionService(cardTransactionRepo model.CardTransactionRepository, 
 }
 
 func (s *transactionService) TransferCash(ctx context.Context, req dto.TransferCashRequest) (err *helpers.CustomError) {
-	err = utils.ValidateTransferCashRequest(req)
-	if err != nil {
-		return err
-	}
-
-	users, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenBy})
+	users, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.UserId})
 	if err != nil {
 		return err
 	}
 	if len(users) == 0 {
 		return helpers.NotFound("User not found")
+	}
+	req.UserType = users[0].UserType
+	err = utils.ValidateTransferCashRequest(req)
+	if err != nil {
+		return err
+	}
+
+	if req.GivenBy != 0 {
+		users, err = s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenBy})
+		if err != nil {
+			return err
+		}
+		if len(users) == 0 {
+			return helpers.NotFound("User not found")
+		}
 	}
 	recieverUsers, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenTo})
 	if err != nil {
@@ -52,8 +62,9 @@ func (s *transactionService) TransferCash(ctx context.Context, req dto.TransferC
 		return helpers.NotFound("User not found")
 	}
 	err = s.IsCashTransactionPossible(ctx, dto.IsCashTransactionPossibleRequest{
-		User:   users[0],
-		Amount: req.Amount,
+		GivenBy: req.GivenBy,
+		User:    users[0],
+		Amount:  req.Amount,
 	})
 	if err != nil {
 		return err
@@ -96,11 +107,14 @@ func (s *transactionService) TransferCash(ctx context.Context, req dto.TransferC
 		return err
 	}
 	if transaction.Status == model.TRANSACTION_STATUS_SUCCESS {
-		user := users[0]
-		user.Cash = user.Cash - req.Amount
-		err = s.userRepo.UpdateUser(ctx, user)
-		if err != nil {
-			return err
+		var user model.User
+		if req.GivenBy != 0 {
+			user = users[0]
+			user.Cash = user.Cash - req.Amount
+			err = s.userRepo.UpdateUser(ctx, user)
+			if err != nil {
+				return err
+			}
 		}
 		user = recieverUsers[0]
 		user.Cash = user.Cash + req.Amount
@@ -313,6 +327,10 @@ func (s *transactionService) GetTransactions(ctx context.Context, req dto.GetTra
 
 func (s *transactionService) IsCashTransactionPossible(ctx context.Context, req dto.IsCashTransactionPossibleRequest) *helpers.CustomError {
 	// for now here is only one check but later more checks may be added
+	if req.GivenBy == 0 {
+		// amount is being paid by system
+		return nil
+	}
 	if req.User.Cash < req.Amount {
 		return helpers.BadRequest("Insufficient cash")
 	}

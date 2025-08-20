@@ -120,11 +120,13 @@ func (ctl *userController) GetUser(c *gin.Context) {
 		})
 		return
 	}
+	data := mapper.EncodeGetUserResponse(user)
 	c.JSON(200, constants.JsonResp{
-		Data:    user,
+		Data:    data,
 		Message: "User fetched successfully",
 	})
 }
+
 func (ctl *userController) GetUserById(c *gin.Context) {
 	ctx := c.Request.Context()
 	userId := c.Query("user_id")
@@ -150,7 +152,7 @@ func (ctl *userController) GetUserById(c *gin.Context) {
 		})
 		return
 	}
-	data := mapper.EncodeGetUserResponse(user)
+	data := mapper.EncodeGetUserByIdResponse(user)
 
 	c.JSON(200, constants.JsonResp{
 		Data:    data,
