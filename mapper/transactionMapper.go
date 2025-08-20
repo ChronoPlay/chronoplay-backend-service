@@ -32,3 +32,13 @@ func DecodeGetTransactionsRequest(c *gin.Context) (dto.GetTransactionsRequest, *
 	req.UserId = userId.(uint32)
 	return req, nil
 }
+
+func DecodeExchangeRequest(c *gin.Context) (dto.ExchangeRequest, *helpers.CustomError) {
+	var req dto.ExchangeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return req, helpers.BadRequest("Invalid request body" + err.Error())
+	}
+	userId, _ := c.Get("UserID")
+	req.UserId = userId.(uint32)
+	return req, nil
+}

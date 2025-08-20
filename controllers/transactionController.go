@@ -70,6 +70,25 @@ func (ctl *transactionController) Transfercards(c *gin.Context) {
 }
 
 func (ctl *transactionController) Exchange(c *gin.Context) {
+	req, err := mapper.DecodeExchangeRequest(c)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	ctx := c.Request.Context()
+	err = ctl.transactionService.Exchange(ctx, req)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	c.JSON(200, constants.JsonResp{
+		Data:    "",
+		Message: "Exchange request created successfully. Please wait for the other user to accept the request.",
+	})
 }
 
 func (ctl *transactionController) GetTransactions(c *gin.Context) {

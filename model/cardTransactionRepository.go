@@ -66,7 +66,7 @@ func (repo *mongoCardTransactionRepo) AddCardTransaction(ctx context.Context, tr
 	return transaction.TransactionGuid, nil
 }
 
-func (repo *mongoCardTransactionRepo) AddCardTransactions(ctx context.Context, transactions []CardTransaction) (uint32, *helpers.CustomError) {
+func (repo *mongoCardTransactionRepo) AddCardTransactions(ctx context.Context, transactions []CardTransaction) (guid uint32, herr *helpers.CustomError) {
 	if len(transactions) == 0 {
 		return 0, helpers.BadRequest("No transactions to add")
 	}

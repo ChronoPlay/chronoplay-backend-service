@@ -250,3 +250,31 @@ func ValidateGiveCardsRequest(req dto.TransferCardRequest) (err *helpers.CustomE
 	}
 	return nil
 }
+
+func ValidateExchangeRequest(req dto.ExchangeRequest) (err *helpers.CustomError) {
+	if req.GivenBy == 0 {
+		return helpers.BadRequest("given by user ID is required")
+	}
+	if req.GivenTo == 0 {
+		return helpers.BadRequest("given to user ID is required")
+	}
+	if req.GivenBy == req.GivenTo {
+		return helpers.BadRequest("given by and given to user IDs cannot be the same")
+	}
+	if req.UserId == 0 {
+		return helpers.BadRequest("user ID is required")
+	}
+	if req.CashSent < 0 {
+		return helpers.BadRequest("cash sent cannot be negative")
+	}
+	if req.CashRecieved < 0 {
+		return helpers.BadRequest("cash received cannot be negative")
+	}
+	if req.CashSent > 0 && req.CashRecieved > 0 {
+		return helpers.BadRequest("either cash sent or cash received must be zero")
+	}
+	if req.UserId != req.GivenBy && req.UserId != req.GivenTo {
+		return helpers.BadRequest("user ID must be either the giver or receiver")
+	}
+	return nil
+}

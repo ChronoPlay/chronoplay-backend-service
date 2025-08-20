@@ -46,6 +46,14 @@ type TransferCard struct {
 }
 
 type ExchangeRequest struct {
+	GivenBy       uint32  `json:"given_by"`
+	GivenTo       uint32  `json:"given_to"`
+	CashSent      float32 `json:"cash_sent"`
+	CashRecieved  float32 `json:"cash_recieved"`
+	CardsSent     []Card  `json:"cards_sent"`
+	CardsRecieved []Card  `json:"cards_recieved"`
+	UserId        uint32  `json:"user_id"`
+	UserType      string  `json:"user_type"`
 }
 
 type GetTransactionsRequest struct {
@@ -68,4 +76,13 @@ type IsCardTransactionPossibleRequest struct {
 	CardsToTransferMap map[string]uint32
 	CardsOccupiedMap   map[string]uint32
 	CardsMap           map[string]model.Card
+}
+
+type IsExhangePossibleRequest struct {
+	GivenByUser   model.User
+	GivenToUser   model.User
+	CashSent      float32
+	CashRecieved  float32
+	CardsSent     []Card
+	CardsRecieved []Card
 }
