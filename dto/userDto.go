@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/ChronoPlay/chronoplay-backend-service/model"
+
 type EmailVerificationRequest struct {
 	Email    string
 	UserName string
@@ -22,9 +24,22 @@ type LoginUserResponse struct {
 }
 
 type GetUserResponse struct {
-	Name     string `bson:"name" json:"name"`
-	Email    string `bson:"email" json:"email"`
-	UserName string `bson:"user_name" json:"user_name"`
+	Name        string               `json:"name"`
+	Email       string               `json:"email"`
+	UserName    string               `json:"user_name"`
+	Cash        float32              `json:"cash"`
+	FriendIds   []uint32             `json:"friend_ids"`
+	PhoneNumber string               `bson:"phone_number" json:"phone_number"`
+	Cards       []model.CardOccupied `bson:"cards" json:"cards"`
+	UserType    string               `json:"user_type"`
+}
+
+type GetUserByIdResponse struct {
+	Name     string  `json:"name"`
+	Email    string  `json:"email"`
+	UserName string  `json:"user_name"`
+	Cash     float32 `json:"cash"`
+	UserType string  `json:"user_type"`
 }
 
 type AddFriendRequest struct {
@@ -45,6 +60,6 @@ type Friend struct {
 	UserName string `bson:"user_name" json:"user_name"`
 	Email    string `bson:"email" json:"email"`
 }
-type GetFriendsResponse struct{
+type GetFriendsResponse struct {
 	Friends []Friend `bson:"friends" json:"friends"`
 }

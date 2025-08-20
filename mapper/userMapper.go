@@ -66,10 +66,26 @@ func DecodeLoginUserRequest(r *gin.Context) (req dto.LoginUserRequest, err *help
 	log.Println("Parsed login request with email:", req.Email, "and user_name:", req.UserName)
 	return req, nil
 }
-func EncodeGetUserResponse(req *model.User) (res dto.GetUserResponse) {
+
+func EncodeGetUserResponse(req *model.User) dto.GetUserResponse {
+	return dto.GetUserResponse{
+		Email:       req.Email,
+		Name:        req.Name,
+		UserName:    req.UserName,
+		Cash:        req.Cash,
+		FriendIds:   req.Friends,
+		UserType:    req.UserType,
+		PhoneNumber: req.PhoneNumber,
+		Cards:       req.Cards,
+	}
+}
+
+func EncodeGetUserByIdResponse(req *model.User) (res dto.GetUserByIdResponse) {
 	res.Email = req.Email
 	res.Name = req.Name
 	res.UserName = req.UserName
+	res.Cash = req.Cash
+	res.UserType = req.UserType
 	return res
 }
 

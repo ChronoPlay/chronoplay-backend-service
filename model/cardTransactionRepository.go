@@ -29,6 +29,8 @@ type CardTransactionRepository interface {
 	AddCardTransactions(ctx context.Context, transactions []CardTransaction) (uint32, *helpers.CustomError)
 	GetCardTransactionsByCardNumber(ctx context.Context, cardNumber string) ([]CardTransaction, *helpers.CustomError)
 	GetCardTransactionsByUserId(ctx context.Context, userId uint32) ([]CardTransaction, *helpers.CustomError)
+	GetCardTransactionsToUserId(ctx context.Context, userId uint32) ([]CardTransaction, *helpers.CustomError)
+	GetCardTransactionsByTransactionGuid(ctx context.Context, transactionGuid uint32) ([]CardTransaction, *helpers.CustomError)
 }
 
 type mongoCardTransactionRepo struct {
@@ -64,7 +66,7 @@ func (repo *mongoCardTransactionRepo) AddCardTransaction(ctx context.Context, tr
 	return transaction.TransactionGuid, nil
 }
 
-func (repo *mongoCardTransactionRepo) AddCardTransactions(ctx context.Context, transactions []CardTransaction) (uint32, *helpers.CustomError) {
+func (repo *mongoCardTransactionRepo) AddCardTransactions(ctx context.Context, transactions []CardTransaction) (guid uint32, herr *helpers.CustomError) {
 	if len(transactions) == 0 {
 		return 0, helpers.BadRequest("No transactions to add")
 	}
@@ -138,6 +140,28 @@ func (repo *mongoCardTransactionRepo) GetCardTransactionsByUserId(ctx context.Co
 		}
 		transactions = append(transactions, transaction)
 	}
+	if err := cursor.Err(); err != nil {
+		return nil, helpers.System("Cursor iteration error: " + err.Error())
+	}
+	return transactions, nil
+}
+
+func (repo *mongoCardTransactionRepo) GetCardTransactionsToUserId(ctx context.Context, userId uint32) ([]CardTransaction, *helpers.CustomError) {
+	var transactions []CardTransaction
+	cursor, err := repo.collection.Find(ctx, bson.M{"given_to": userId})
+	if err != nil {
+		return nil, helpers.System("Failed to get card transactions to user ID: " + err.Error())
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var transaction CardTransaction
+		if err := cursor.Decode(&transaction); err != nil {
+			return nil, helpers.System("Failed to decode card transaction: " + err.Error())
+		}
+		transactions = append(transactions, transaction)
+	}
+
 	if err := cursor.Err(); err != nil {
 		return nil, helpers.System("Cursor iteration error: " + err.Error())
 	}

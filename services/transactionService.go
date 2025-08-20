@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"sort"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
@@ -13,6 +14,8 @@ type TransactionService interface {
 	TransferCash(ctx context.Context, req dto.TransferCashRequest) *helpers.CustomError
 	TransferCards(ctx context.Context, req dto.TransferCardRequest) *helpers.CustomError
 	GiveCards(ctx context.Context, req dto.TransferCardRequest) *helpers.CustomError
+	GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) (dto.GetTransactionsResponse, *helpers.CustomError)
+	Exchange(ctx context.Context, req dto.ExchangeRequest) *helpers.CustomError
 }
 
 type transactionService struct {
@@ -32,17 +35,27 @@ func NewTransactionService(cardTransactionRepo model.CardTransactionRepository, 
 }
 
 func (s *transactionService) TransferCash(ctx context.Context, req dto.TransferCashRequest) (err *helpers.CustomError) {
-	err = utils.ValidateTransferCashRequest(req)
-	if err != nil {
-		return err
-	}
-
-	users, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenBy})
+	users, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.UserId})
 	if err != nil {
 		return err
 	}
 	if len(users) == 0 {
 		return helpers.NotFound("User not found")
+	}
+	req.UserType = users[0].UserType
+	err = utils.ValidateTransferCashRequest(req)
+	if err != nil {
+		return err
+	}
+
+	if req.GivenBy != 0 {
+		users, err = s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenBy})
+		if err != nil {
+			return err
+		}
+		if len(users) == 0 {
+			return helpers.NotFound("User not found")
+		}
 	}
 	recieverUsers, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenTo})
 	if err != nil {
@@ -52,8 +65,9 @@ func (s *transactionService) TransferCash(ctx context.Context, req dto.TransferC
 		return helpers.NotFound("User not found")
 	}
 	err = s.IsCashTransactionPossible(ctx, dto.IsCashTransactionPossibleRequest{
-		User:   users[0],
-		Amount: req.Amount,
+		GivenBy: req.GivenBy,
+		User:    users[0],
+		Amount:  req.Amount,
 	})
 	if err != nil {
 		return err
@@ -96,11 +110,14 @@ func (s *transactionService) TransferCash(ctx context.Context, req dto.TransferC
 		return err
 	}
 	if transaction.Status == model.TRANSACTION_STATUS_SUCCESS {
-		user := users[0]
-		user.Cash = user.Cash - req.Amount
-		err = s.userRepo.UpdateUser(ctx, user)
-		if err != nil {
-			return err
+		var user model.User
+		if req.GivenBy != 0 {
+			user = users[0]
+			user.Cash = user.Cash - req.Amount
+			err = s.userRepo.UpdateUser(ctx, user)
+			if err != nil {
+				return err
+			}
 		}
 		user = recieverUsers[0]
 		user.Cash = user.Cash + req.Amount
@@ -305,14 +322,237 @@ func (s *transactionService) GiveCards(ctx context.Context, req dto.TransferCard
 	return nil
 }
 
-func (s *transactionService) Exchange(ctx context.Context, req dto.ExchangeRequest) {
+func (s *transactionService) Exchange(ctx context.Context, req dto.ExchangeRequest) *helpers.CustomError {
+	err := utils.ValidateExchangeRequest(req)
+	if err != nil {
+		return err
+	}
+	users, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenBy})
+	if err != nil {
+		return err
+	}
+	if len(users) == 0 {
+		return helpers.NotFound("User not found")
+	}
+	sender := users[0]
+	users, err = s.userRepo.GetUsers(ctx, model.User{UserId: req.GivenTo})
+	if err != nil {
+		return err
+	}
+	if len(users) == 0 {
+		return helpers.NotFound("User not found")
+	}
+	receiver := users[0]
+	if sender.UserId == receiver.UserId {
+		return helpers.BadRequest("Sender and receiver cannot be the same user")
+	}
+
+	err = IsExchangePossible(dto.IsExhangePossibleRequest{
+		GivenByUser:   sender,
+		GivenToUser:   receiver,
+		CashSent:      req.CashSent,
+		CashRecieved:  req.CashRecieved,
+		CardsSent:     req.CardsSent,
+		CardsRecieved: req.CardsRecieved,
+	})
+	if err != nil {
+		return err
+	}
+
+	cardTransactions := []model.CardTransaction{}
+	for _, card := range req.CardsSent {
+		cardTransactions = append(cardTransactions, model.CardTransaction{
+			CardNumber: card.CardNumber,
+			Amount:     card.Amount,
+			GivenBy:    sender.UserId,
+			GivenTo:    receiver.UserId,
+			Status:     model.TRANSACTION_STATUS_PENDING,
+			CreatedBy:  sender.UserId,
+		})
+	}
+	for _, card := range req.CardsRecieved {
+		cardTransactions = append(cardTransactions, model.CardTransaction{
+			CardNumber: card.CardNumber,
+			Amount:     card.Amount,
+			GivenBy:    receiver.UserId,
+			GivenTo:    sender.UserId,
+			Status:     model.TRANSACTION_STATUS_PENDING,
+			CreatedBy:  receiver.UserId,
+		})
+	}
+
+	// need to add transaction commit and abort and rollback handling here
+	paymentGuid := uint32(0)
+	if len(cardTransactions) > 0 {
+		paymentGuid, err = s.cardTransactionRepo.AddCardTransactions(ctx, cardTransactions)
+		if err != nil {
+			return err
+		}
+	}
+
+	cashTransaction := model.CashTransaction{}
+	if req.CashSent > 0 {
+		cashTransaction = model.CashTransaction{
+			Amount:          req.CashSent,
+			GivenBy:         sender.UserId,
+			GivenTo:         receiver.UserId,
+			Status:          model.TRANSACTION_STATUS_PENDING,
+			CreatedBy:       sender.UserId,
+			TransactionGuid: paymentGuid,
+		}
+	} else if req.CashRecieved > 0 {
+		cashTransaction = model.CashTransaction{
+			Amount:          req.CashRecieved,
+			GivenBy:         receiver.UserId,
+			GivenTo:         sender.UserId,
+			Status:          model.TRANSACTION_STATUS_PENDING,
+			CreatedBy:       receiver.UserId,
+			TransactionGuid: paymentGuid,
+		}
+	}
+	_, err = s.cashTransactionRepo.AddCashTransaction(ctx, cashTransaction)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (s *transactionService) GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) {
+func (s *transactionService) GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) (resp dto.GetTransactionsResponse, err *helpers.CustomError) {
+	if req.UserId == 0 {
+		return resp, helpers.BadRequest("User ID is required")
+	}
+	// first i need to get all cashtransactions which are given by recieved by this user
+	cashTransactionsByUser, err := s.cashTransactionRepo.GetCashTransactionsByUserId(ctx, req.UserId)
+	if err != nil {
+		return resp, err
+	}
+	cashTransactionsToUser, err := s.cashTransactionRepo.GetCashTransactionsToUserId(ctx, req.UserId)
+	if err != nil {
+		return resp, err
+	}
+
+	// then i need to map those by transaction guid
+	guidToCashTransactionsByUserMap := make(map[uint32][]model.CashTransaction)
+	for _, transaction := range cashTransactionsByUser {
+		guidToCashTransactionsByUserMap[transaction.TransactionGuid] = append(guidToCashTransactionsByUserMap[transaction.TransactionGuid], transaction)
+	}
+	guidToCashTransactionsToUserMap := make(map[uint32][]model.CashTransaction)
+	for _, transaction := range cashTransactionsToUser {
+		guidToCashTransactionsToUserMap[transaction.TransactionGuid] = append(guidToCashTransactionsToUserMap[transaction.TransactionGuid], transaction)
+	}
+
+	// then i need to get all card transactions which are given by recieved by this user
+	cardTransactionsByUser, err := s.cardTransactionRepo.GetCardTransactionsByUserId(ctx, req.UserId)
+	if err != nil {
+		return resp, err
+	}
+	cardTransactionsToUser, err := s.cardTransactionRepo.GetCardTransactionsToUserId(ctx, req.UserId)
+	if err != nil {
+		return resp, err
+	}
+
+	// then i need to map those by transaction guid
+	guidToCardTransactionsByUserMap := make(map[uint32][]model.CardTransaction)
+	for _, transaction := range cardTransactionsByUser {
+		guidToCardTransactionsByUserMap[transaction.TransactionGuid] = append(guidToCardTransactionsByUserMap[transaction.TransactionGuid], transaction)
+	}
+	guidToCardTransactionsToUserMap := make(map[uint32][]model.CardTransaction)
+	for _, transaction := range cardTransactionsToUser {
+		guidToCardTransactionsToUserMap[transaction.TransactionGuid] = append(guidToCardTransactionsToUserMap[transaction.TransactionGuid], transaction)
+	}
+
+	// after this i need to merge those maps on guid basis and return my response
+	uniqueGuids := make(map[uint32]bool)
+	for guid := range guidToCashTransactionsByUserMap {
+		uniqueGuids[guid] = true
+	}
+	for guid := range guidToCardTransactionsByUserMap {
+		uniqueGuids[guid] = true
+	}
+	for guid := range guidToCashTransactionsToUserMap {
+		uniqueGuids[guid] = true
+	}
+	for guid := range guidToCardTransactionsToUserMap {
+		uniqueGuids[guid] = true
+	}
+	for guid := range uniqueGuids {
+		transaction := dto.Transaction{
+			TransactionGuid: guid,
+		}
+		cardTransactionsToUser, ok := guidToCardTransactionsToUserMap[guid]
+		if ok {
+			for _, cardTransaction := range cardTransactionsToUser {
+				transaction.CardsRecieved = append(transaction.CardsRecieved, dto.Card{
+					CardNumber: cardTransaction.CardNumber,
+					Amount:     cardTransaction.Amount,
+				})
+			}
+			transaction.Time = cardTransactionsToUser[0].CreatedAt.Time()
+			transaction.TransactionWith = cardTransactionsToUser[0].GivenBy
+			transaction.Status = cardTransactionsToUser[0].Status
+		}
+		cardTransactionsByUser, ok := guidToCardTransactionsByUserMap[guid]
+		if ok {
+			for _, cardTransaction := range cardTransactionsByUser {
+				transaction.CardsSent = append(transaction.CardsSent, dto.Card{
+					CardNumber: cardTransaction.CardNumber,
+					Amount:     cardTransaction.Amount,
+				})
+			}
+			if transaction.Time.IsZero() {
+				transaction.Time = cardTransactionsByUser[0].CreatedAt.Time()
+			}
+			if transaction.TransactionWith == 0 {
+				transaction.TransactionWith = cardTransactionsByUser[0].GivenTo
+			}
+			if transaction.Status == "" {
+				transaction.Status = cardTransactionsByUser[0].Status
+			}
+		}
+		cashTransactionsByUser, ok := guidToCashTransactionsByUserMap[guid]
+		if ok {
+			for _, cashTransaction := range cashTransactionsByUser {
+				transaction.CashSent += cashTransaction.Amount
+			}
+			if transaction.Time.IsZero() {
+				transaction.Time = cashTransactionsByUser[0].CreatedAt.Time()
+			}
+			if transaction.TransactionWith == 0 {
+				transaction.TransactionWith = cashTransactionsByUser[0].GivenTo
+			}
+			if transaction.Status == "" {
+				transaction.Status = cashTransactionsByUser[0].Status
+			}
+		}
+		cashTransactionsToUser, ok := guidToCashTransactionsToUserMap[guid]
+		if ok {
+			for _, cashTransaction := range cashTransactionsToUser {
+				transaction.CashRecieved += cashTransaction.Amount
+			}
+			if transaction.Time.IsZero() {
+				transaction.Time = cashTransactionsToUser[0].CreatedAt.Time()
+			}
+			if transaction.TransactionWith == 0 {
+				transaction.TransactionWith = cashTransactionsToUser[0].GivenBy
+			}
+			if transaction.Status == "" {
+				transaction.Status = cashTransactionsToUser[0].Status
+			}
+		}
+		resp.Transactions = append(resp.Transactions, transaction)
+	}
+	sort.Slice(resp.Transactions, func(i, j int) bool {
+		return resp.Transactions[i].TransactionGuid > resp.Transactions[j].TransactionGuid
+	})
+	return resp, nil
 }
 
 func (s *transactionService) IsCashTransactionPossible(ctx context.Context, req dto.IsCashTransactionPossibleRequest) *helpers.CustomError {
 	// for now here is only one check but later more checks may be added
+	if req.GivenBy == 0 {
+		// amount is being paid by system
+		return nil
+	}
 	if req.User.Cash < req.Amount {
 		return helpers.BadRequest("Insufficient cash")
 	}
@@ -339,6 +579,71 @@ func (s *transactionService) IsCardTransactionPossible(ctx context.Context, req 
 			} else {
 				return helpers.BadRequest("Card not found: " + cardNumber)
 			}
+		}
+	}
+	return nil
+}
+
+func IsExchangePossible(req dto.IsExhangePossibleRequest) *helpers.CustomError {
+	err := IsValidCardExchange(req.CardsSent, req.CardsRecieved)
+	if err != nil {
+		return err
+	}
+
+	if len(req.CardsSent) > 0 {
+		cardsToSendMap := make(map[string]uint32)
+		for _, card := range req.CardsSent {
+			if card.Amount <= 0 {
+				return helpers.BadRequest("Card amount must be greater than zero")
+			}
+			cardsToSendMap[card.CardNumber] += card.Amount
+		}
+		cardsSenderHaveMap := make(map[string]uint32)
+		for _, card := range req.GivenByUser.Cards {
+			cardsSenderHaveMap[card.CardNumber] += card.Occupied
+		}
+		for cardNumber, amount := range cardsToSendMap {
+			if cardsSenderHaveMap[cardNumber] < amount {
+				return helpers.BadRequest("Insufficient balance for card: " + cardNumber)
+			}
+		}
+	}
+	if len(req.CardsRecieved) > 0 {
+		cardsToReceiveMap := make(map[string]uint32)
+		for _, card := range req.CardsRecieved {
+			if card.Amount <= 0 {
+				return helpers.BadRequest("Card amount must be greater than zero")
+			}
+			cardsToReceiveMap[card.CardNumber] += card.Amount
+		}
+		cardsReceiverHaveMap := make(map[string]uint32)
+		for _, card := range req.GivenToUser.Cards {
+			cardsReceiverHaveMap[card.CardNumber] += card.Occupied
+		}
+		for cardNumber, amount := range cardsToReceiveMap {
+			if cardsReceiverHaveMap[cardNumber] < amount {
+				return helpers.BadRequest("Insufficient balance for card: " + cardNumber)
+			}
+		}
+	}
+	if req.CashSent > req.GivenByUser.Cash {
+		return helpers.BadRequest("Insufficient cash to exchange")
+	}
+	if req.CashRecieved > req.GivenToUser.Cash {
+		return helpers.BadRequest("Insufficient cash to exchange")
+	}
+	return nil
+}
+
+func IsValidCardExchange(cardsSent, cardsRecieved []dto.Card) *helpers.CustomError {
+	sentCardNumbers := make(map[string]bool)
+	for _, card := range cardsSent {
+		sentCardNumbers[card.CardNumber] = true
+	}
+
+	for _, card := range cardsRecieved {
+		if sentCardNumbers[card.CardNumber] {
+			return helpers.BadRequest("Same card cannot be sent and received")
 		}
 	}
 	return nil
