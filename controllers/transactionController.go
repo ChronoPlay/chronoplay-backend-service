@@ -73,4 +73,23 @@ func (ctl *transactionController) Exchange(c *gin.Context) {
 }
 
 func (ctl *transactionController) GetTransactions(c *gin.Context) {
+	req, err := mapper.DecodeGetTransactionsRequest(c)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	ctx := c.Request.Context()
+	resp, err := ctl.transactionService.GetTransactions(ctx, req)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	c.JSON(200, constants.JsonResp{
+		Data:    resp.Transactions,
+		Message: "Transactions fetched successfully",
+	})
 }

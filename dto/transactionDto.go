@@ -1,6 +1,26 @@
 package dto
 
-import "github.com/ChronoPlay/chronoplay-backend-service/model"
+import (
+	"time"
+
+	"github.com/ChronoPlay/chronoplay-backend-service/model"
+)
+
+type Transaction struct {
+	TransactionGuid uint32    `json:"transaction_guid"`
+	CardsRecieved   []Card    `json:"cards_recieved"`
+	CardsSent       []Card    `json:"cards_sent"`
+	CashSent        float32   `json:"cash_sent"`
+	CashRecieved    float32   `json:"cash_recieved"`
+	TransactionWith uint32    `json:"transaction_with"`
+	Time            time.Time `json:"time"`
+	Status          string    `json:"status"`
+}
+
+type Card struct {
+	CardNumber string `json:"card_number"`
+	Amount     uint32 `json:"amount"`
+}
 
 type TransferCashRequest struct {
 	Amount   float32 `json:"amount"`
@@ -29,6 +49,11 @@ type ExchangeRequest struct {
 }
 
 type GetTransactionsRequest struct {
+	UserId uint32 `json:"user_id"`
+}
+
+type GetTransactionsResponse struct {
+	Transactions []Transaction `json:"transactions"`
 }
 
 type IsCashTransactionPossibleRequest struct {

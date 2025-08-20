@@ -25,3 +25,10 @@ func DecodeTransferCardsRequest(c *gin.Context) (dto.TransferCardRequest, *helpe
 	req.UserId = userId.(uint32)
 	return req, nil
 }
+
+func DecodeGetTransactionsRequest(c *gin.Context) (dto.GetTransactionsRequest, *helpers.CustomError) {
+	var req dto.GetTransactionsRequest
+	userId, _ := c.Get("UserID")
+	req.UserId = userId.(uint32)
+	return req, nil
+}

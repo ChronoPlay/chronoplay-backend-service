@@ -26,7 +26,9 @@ type CashTransactionRepository interface {
 	GetCollection() *mongo.Collection
 	AddCashTransaction(ctx context.Context, transaction CashTransaction) (uint32, *helpers.CustomError)
 	GetCashTransactionsByUserId(ctx context.Context, userId uint32) ([]CashTransaction, *helpers.CustomError)
+	GetCashTransactionsToUserId(ctx context.Context, userId uint32) ([]CashTransaction, *helpers.CustomError)
 	GetCashTransactionsByTransactionId(ctx context.Context, transactionId uint32) ([]CashTransaction, *helpers.CustomError)
+	GetCashTransactionsByTransactionGuid(ctx context.Context, transactionGuid uint32) ([]CashTransaction, *helpers.CustomError)
 }
 
 type mongoCashTransactionRepo struct {
@@ -67,6 +69,29 @@ func (repo *mongoCashTransactionRepo) GetCashTransactionsByUserId(ctx context.Co
 	cursor, err := repo.collection.Find(ctx, bson.M{"given_by": userId})
 	if err != nil {
 		return nil, helpers.System("Failed to get cash transactions by user ID: " + err.Error())
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var transaction CashTransaction
+		if err := cursor.Decode(&transaction); err != nil {
+			return nil, helpers.System("Failed to decode cash transaction: " + err.Error())
+		}
+		transactions = append(transactions, transaction)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, helpers.System("Failed to iterate cursor: " + err.Error())
+	}
+
+	return transactions, nil
+}
+
+func (repo *mongoCashTransactionRepo) GetCashTransactionsToUserId(ctx context.Context, userId uint32) ([]CashTransaction, *helpers.CustomError) {
+	var transactions []CashTransaction
+	cursor, err := repo.collection.Find(ctx, bson.M{"given_to": userId})
+	if err != nil {
+		return nil, helpers.System("Failed to get cash transactions to user ID: " + err.Error())
 	}
 	defer cursor.Close(ctx)
 

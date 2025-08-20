@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"sort"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
@@ -13,6 +14,7 @@ type TransactionService interface {
 	TransferCash(ctx context.Context, req dto.TransferCashRequest) *helpers.CustomError
 	TransferCards(ctx context.Context, req dto.TransferCardRequest) *helpers.CustomError
 	GiveCards(ctx context.Context, req dto.TransferCardRequest) *helpers.CustomError
+	GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) (dto.GetTransactionsResponse, *helpers.CustomError)
 }
 
 type transactionService struct {
@@ -322,7 +324,134 @@ func (s *transactionService) GiveCards(ctx context.Context, req dto.TransferCard
 func (s *transactionService) Exchange(ctx context.Context, req dto.ExchangeRequest) {
 }
 
-func (s *transactionService) GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) {
+func (s *transactionService) GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) (resp dto.GetTransactionsResponse, err *helpers.CustomError) {
+	if req.UserId == 0 {
+		return resp, helpers.BadRequest("User ID is required")
+	}
+	// first i need to get all cashtransactions which are given by recieved by this user
+	cashTransactionsByUser, err := s.cashTransactionRepo.GetCashTransactionsByUserId(ctx, req.UserId)
+	if err != nil {
+		return resp, err
+	}
+	cashTransactionsToUser, err := s.cashTransactionRepo.GetCashTransactionsToUserId(ctx, req.UserId)
+	if err != nil {
+		return resp, err
+	}
+
+	// then i need to map those by transaction guid
+	guidToCashTransactionsByUserMap := make(map[uint32][]model.CashTransaction)
+	for _, transaction := range cashTransactionsByUser {
+		guidToCashTransactionsByUserMap[transaction.TransactionGuid] = append(guidToCashTransactionsByUserMap[transaction.TransactionGuid], transaction)
+	}
+	guidToCashTransactionsToUserMap := make(map[uint32][]model.CashTransaction)
+	for _, transaction := range cashTransactionsToUser {
+		guidToCashTransactionsToUserMap[transaction.TransactionGuid] = append(guidToCashTransactionsToUserMap[transaction.TransactionGuid], transaction)
+	}
+
+	// then i need to get all card transactions which are given by recieved by this user
+	cardTransactionsByUser, err := s.cardTransactionRepo.GetCardTransactionsByUserId(ctx, req.UserId)
+	if err != nil {
+		return resp, err
+	}
+	cardTransactionsToUser, err := s.cardTransactionRepo.GetCardTransactionsToUserId(ctx, req.UserId)
+	if err != nil {
+		return resp, err
+	}
+
+	// then i need to map those by transaction guid
+	guidToCardTransactionsByUserMap := make(map[uint32][]model.CardTransaction)
+	for _, transaction := range cardTransactionsByUser {
+		guidToCardTransactionsByUserMap[transaction.TransactionGuid] = append(guidToCardTransactionsByUserMap[transaction.TransactionGuid], transaction)
+	}
+	guidToCardTransactionsToUserMap := make(map[uint32][]model.CardTransaction)
+	for _, transaction := range cardTransactionsToUser {
+		guidToCardTransactionsToUserMap[transaction.TransactionGuid] = append(guidToCardTransactionsToUserMap[transaction.TransactionGuid], transaction)
+	}
+
+	// after this i need to merge those maps on guid basis and return my response
+	uniqueGuids := make(map[uint32]bool)
+	for guid := range guidToCashTransactionsByUserMap {
+		uniqueGuids[guid] = true
+	}
+	for guid := range guidToCardTransactionsByUserMap {
+		uniqueGuids[guid] = true
+	}
+	for guid := range guidToCashTransactionsToUserMap {
+		uniqueGuids[guid] = true
+	}
+	for guid := range guidToCardTransactionsToUserMap {
+		uniqueGuids[guid] = true
+	}
+	for guid := range uniqueGuids {
+		transaction := dto.Transaction{
+			TransactionGuid: guid,
+		}
+		cardTransactionsToUser, ok := guidToCardTransactionsToUserMap[guid]
+		if ok {
+			for _, cardTransaction := range cardTransactionsToUser {
+				transaction.CardsRecieved = append(transaction.CardsRecieved, dto.Card{
+					CardNumber: cardTransaction.CardNumber,
+					Amount:     cardTransaction.Amount,
+				})
+			}
+			transaction.Time = cardTransactionsToUser[0].CreatedAt.Time()
+			transaction.TransactionWith = cardTransactionsToUser[0].GivenBy
+			transaction.Status = cardTransactionsToUser[0].Status
+		}
+		cardTransactionsByUser, ok := guidToCardTransactionsByUserMap[guid]
+		if ok {
+			for _, cardTransaction := range cardTransactionsByUser {
+				transaction.CardsSent = append(transaction.CardsSent, dto.Card{
+					CardNumber: cardTransaction.CardNumber,
+					Amount:     cardTransaction.Amount,
+				})
+			}
+			if transaction.Time.IsZero() {
+				transaction.Time = cardTransactionsByUser[0].CreatedAt.Time()
+			}
+			if transaction.TransactionWith == 0 {
+				transaction.TransactionWith = cardTransactionsByUser[0].GivenTo
+			}
+			if transaction.Status == "" {
+				transaction.Status = cardTransactionsByUser[0].Status
+			}
+		}
+		cashTransactionsByUser, ok := guidToCashTransactionsByUserMap[guid]
+		if ok {
+			for _, cashTransaction := range cashTransactionsByUser {
+				transaction.CashSent += cashTransaction.Amount
+			}
+			if transaction.Time.IsZero() {
+				transaction.Time = cashTransactionsByUser[0].CreatedAt.Time()
+			}
+			if transaction.TransactionWith == 0 {
+				transaction.TransactionWith = cashTransactionsByUser[0].GivenTo
+			}
+			if transaction.Status == "" {
+				transaction.Status = cashTransactionsByUser[0].Status
+			}
+		}
+		cashTransactionsToUser, ok := guidToCashTransactionsToUserMap[guid]
+		if ok {
+			for _, cashTransaction := range cashTransactionsToUser {
+				transaction.CashRecieved += cashTransaction.Amount
+			}
+			if transaction.Time.IsZero() {
+				transaction.Time = cashTransactionsToUser[0].CreatedAt.Time()
+			}
+			if transaction.TransactionWith == 0 {
+				transaction.TransactionWith = cashTransactionsToUser[0].GivenBy
+			}
+			if transaction.Status == "" {
+				transaction.Status = cashTransactionsToUser[0].Status
+			}
+		}
+		resp.Transactions = append(resp.Transactions, transaction)
+	}
+	sort.Slice(resp.Transactions, func(i, j int) bool {
+		return resp.Transactions[i].TransactionGuid > resp.Transactions[j].TransactionGuid
+	})
+	return resp, nil
 }
 
 func (s *transactionService) IsCashTransactionPossible(ctx context.Context, req dto.IsCashTransactionPossibleRequest) *helpers.CustomError {
