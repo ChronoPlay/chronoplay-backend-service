@@ -21,6 +21,7 @@ type Card struct {
 	Owners      []uint32           `bson:"owners" json:"owners"`
 	Creator     uint32             `bson:"creator" json:"creator"`
 	ImageUrl    string             `bson:"image_url" json:"image_url"`
+	Rarity      string             `bson:"rarity" json:"rarity"`
 }
 
 type GetCardsRequest struct {

@@ -11,7 +11,6 @@ import (
 	"github.com/ChronoPlay/chronoplay-backend-service/constants"
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/mapper"
-	"github.com/ChronoPlay/chronoplay-backend-service/model"
 	service "github.com/ChronoPlay/chronoplay-backend-service/services"
 )
 
@@ -111,8 +110,8 @@ func (ctl *userController) LoginUser(c *gin.Context) {
 func (ctl *userController) GetUser(c *gin.Context) {
 	ctx := c.Request.Context()
 	userId, _ := c.Get("UserID")
-	user, err := ctl.userService.GetUser(ctx, model.User{
-		UserId: userId.(uint32),
+	user, err := ctl.userService.GetUser(ctx, dto.GetUserRequest{
+		UserID: userId.(uint32),
 	})
 	if err != nil {
 		c.JSON(int(err.Code), constants.JsonResp{
@@ -120,9 +119,8 @@ func (ctl *userController) GetUser(c *gin.Context) {
 		})
 		return
 	}
-	data := mapper.EncodeGetUserResponse(user)
 	c.JSON(200, constants.JsonResp{
-		Data:    data,
+		Data:    user,
 		Message: "User fetched successfully",
 	})
 }
@@ -137,18 +135,12 @@ func (ctl *userController) GetUserById(c *gin.Context) {
 		})
 		return
 	}
-	user, err := ctl.userService.GetUser(ctx, model.User{
-		UserId: uint32(id64),
+	user, err := ctl.userService.GetUser(ctx, dto.GetUserRequest{
+		UserID: uint32(id64),
 	})
 	if err != nil {
 		c.JSON(int(err.Code), constants.JsonResp{
 			Message: err.Message,
-		})
-		return
-	}
-	if user == nil {
-		c.JSON(http.StatusBadRequest, constants.JsonResp{
-			Message: "user not found by the user_id",
 		})
 		return
 	}

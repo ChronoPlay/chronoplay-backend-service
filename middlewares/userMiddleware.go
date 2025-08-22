@@ -25,7 +25,7 @@ func NewUserMiddleware(next service.UserService) UserMiddleware {
 	}
 }
 
-func (mw userMiddleware) GetUser(ctx context.Context, req model.User) (resp *model.User, err *helpers.CustomError) {
+func (mw userMiddleware) GetUser(ctx context.Context, req dto.GetUserRequest) (resp dto.GetUserResponse, err *helpers.CustomError) {
 	defer func(begin time.Time) {
 		log.Printf("ctx:", ctx, " method:", "GetUser", " req:", req, " took:", time.Since(begin), " err:", err, " resp:", resp)
 	}(time.Now())

@@ -9,12 +9,13 @@ import (
 
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
+	"github.com/ChronoPlay/chronoplay-backend-service/mapper"
 	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 	"github.com/ChronoPlay/chronoplay-backend-service/utils"
 )
 
 type UserService interface {
-	GetUser(context.Context, model.User) (*model.User, *helpers.CustomError)
+	GetUser(context.Context, dto.GetUserRequest) (dto.GetUserResponse, *helpers.CustomError)
 	RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomError)
 	VerifyUser(ctx context.Context, req dto.VerifyUserRequest) (err *helpers.CustomError)
 	LoginUser(ctx context.Context, req dto.LoginUserRequest) (dto.LoginUserResponse, *helpers.CustomError)
@@ -25,23 +26,45 @@ type UserService interface {
 
 type userService struct {
 	userRepo model.UserRepository
+	cardRepo model.CardRepository
 }
 
-func NewUserService(userRepo model.UserRepository) UserService {
+func NewUserService(userRepo model.UserRepository, cardRepo model.CardRepository) UserService {
 	return &userService{
 		userRepo: userRepo,
+		cardRepo: cardRepo,
 	}
 }
 
-func (s *userService) GetUser(ctx context.Context, req model.User) (resp *model.User, err *helpers.CustomError) {
-	users, err := s.userRepo.GetUsers(ctx, req)
+func (s *userService) GetUser(ctx context.Context, req dto.GetUserRequest) (resp dto.GetUserResponse, err *helpers.CustomError) {
+	users, err := s.userRepo.GetUsers(ctx, model.User{
+		UserId: req.UserID,
+	})
 	if err != nil {
 		return resp, err
 	}
 	if len(users) == 0 {
-		return nil, helpers.NotFound("User not found")
+		return dto.GetUserResponse{}, helpers.NotFound("User not found")
 	}
-	return &users[0], nil
+	cardNumbers := []string{}
+	for _, card := range users[0].Cards {
+		cardNumbers = append(cardNumbers, card.CardNumber)
+	}
+	cards, err := s.cardRepo.GetCards(ctx, model.GetCardsRequest{Numbers: cardNumbers})
+	if err != nil {
+		return dto.GetUserResponse{}, err
+	}
+
+	return dto.GetUserResponse{
+		Name:        users[0].Name,
+		Email:       users[0].Email,
+		UserName:    users[0].UserName,
+		Cash:        users[0].Cash,
+		FriendIds:   users[0].Friends,
+		PhoneNumber: users[0].PhoneNumber,
+		Cards:       mapper.MapCardsToResponse(cards),
+		UserType:    users[0].UserType,
+	}, nil
 }
 
 func (s *userService) RegisterUser(ctx context.Context, req model.User) (err *helpers.CustomError) {

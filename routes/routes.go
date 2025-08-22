@@ -41,6 +41,7 @@ func SetupRoutes(r *gin.Engine, userController controller.UserController, cardCo
 		transaction.POST("/transfer_cards", transactionController.Transfercards)
 		transaction.POST("/exchange", transactionController.Exchange)
 		transaction.GET("/get_transactions", transactionController.GetTransactions)
+		transaction.GET("/get_possible_exchange", transactionController.GetPossibleExchange)
 	}
 
 }
