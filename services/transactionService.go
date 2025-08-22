@@ -6,6 +6,7 @@ import (
 
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
+	"github.com/ChronoPlay/chronoplay-backend-service/mapper"
 	model "github.com/ChronoPlay/chronoplay-backend-service/model"
 	"github.com/ChronoPlay/chronoplay-backend-service/utils"
 )
@@ -16,6 +17,7 @@ type TransactionService interface {
 	GiveCards(ctx context.Context, req dto.TransferCardRequest) *helpers.CustomError
 	GetTransactions(ctx context.Context, req dto.GetTransactionsRequest) (dto.GetTransactionsResponse, *helpers.CustomError)
 	Exchange(ctx context.Context, req dto.ExchangeRequest) *helpers.CustomError
+	GetPossibleExchange(ctx context.Context, req dto.GetPossibleExchangeRequest) (dto.GetPossibleExchangeResponse, *helpers.CustomError)
 }
 
 type transactionService struct {
@@ -647,4 +649,55 @@ func IsValidCardExchange(cardsSent, cardsRecieved []dto.Card) *helpers.CustomErr
 		}
 	}
 	return nil
+}
+
+func (s *transactionService) GetPossibleExchange(ctx context.Context, req dto.GetPossibleExchangeRequest) (dto.GetPossibleExchangeResponse, *helpers.CustomError) {
+	err := utils.ValidateGetPossibleExchangeRequest(req)
+	if err != nil {
+		return dto.GetPossibleExchangeResponse{}, err
+	}
+	users, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.UserId})
+	if err != nil {
+		return dto.GetPossibleExchangeResponse{}, err
+	}
+	if len(users) == 0 {
+		return dto.GetPossibleExchangeResponse{}, helpers.NotFound("User not found")
+	}
+	curUser := users[0]
+	traderUsers, err := s.userRepo.GetUsers(ctx, model.User{UserId: req.TraderId})
+	if err != nil {
+		return dto.GetPossibleExchangeResponse{}, err
+	}
+	if len(traderUsers) == 0 {
+		return dto.GetPossibleExchangeResponse{}, helpers.NotFound("Trader not found")
+	}
+	trader := traderUsers[0]
+
+	curUserCardNumbers := []string{}
+	for _, card := range curUser.Cards {
+		curUserCardNumbers = append(curUserCardNumbers, card.CardNumber)
+	}
+	traderCardNumbers := []string{}
+	for _, card := range trader.Cards {
+		traderCardNumbers = append(traderCardNumbers, card.CardNumber)
+	}
+	curUserCards, err := s.cardRepo.GetCards(ctx, model.GetCardsRequest{
+		Numbers: curUserCardNumbers,
+	})
+	if err != nil {
+		return dto.GetPossibleExchangeResponse{}, err
+	}
+	traderCards, err := s.cardRepo.GetCards(ctx, model.GetCardsRequest{
+		Numbers: traderCardNumbers,
+	})
+	if err != nil {
+		return dto.GetPossibleExchangeResponse{}, err
+	}
+
+	return dto.GetPossibleExchangeResponse{
+		YourCash:    curUser.Cash,
+		TraderCash:  trader.Cash,
+		YourCards:   mapper.MapCardsToResponse(curUserCards),
+		TraderCards: mapper.MapCardsToResponse(traderCards),
+	}, nil
 }

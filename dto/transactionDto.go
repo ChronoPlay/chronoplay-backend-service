@@ -86,3 +86,15 @@ type IsExhangePossibleRequest struct {
 	CardsSent     []Card
 	CardsRecieved []Card
 }
+
+type GetPossibleExchangeRequest struct {
+	UserId   uint32 `json:"user_id"`
+	TraderId uint32 `json:"trader_id"`
+}
+
+type GetPossibleExchangeResponse struct {
+	YourCash    float32        `json:"yourCash"`
+	YourCards   []CardResponse `json:"yourCards"`
+	TraderCash  float32        `json:"traderCash"`
+	TraderCards []CardResponse `json:"traderCards"`
+}

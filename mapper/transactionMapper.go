@@ -1,6 +1,8 @@
 package mapper
 
 import (
+	"strconv"
+
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 	"github.com/gin-gonic/gin"
@@ -40,5 +42,20 @@ func DecodeExchangeRequest(c *gin.Context) (dto.ExchangeRequest, *helpers.Custom
 	}
 	userId, _ := c.Get("UserID")
 	req.UserId = userId.(uint32)
+	return req, nil
+}
+
+func DecodeGetPossibleExchangeRequest(c *gin.Context) (req dto.GetPossibleExchangeRequest, err *helpers.CustomError) {
+	userId, _ := c.Get("UserID")
+	req.UserId = userId.(uint32)
+	traderId, exists := c.GetQuery("user_id")
+	if !exists {
+		return req, helpers.BadRequest("Missing user_id in query parameters")
+	}
+	traderIdUint, perr := strconv.ParseUint(traderId, 10, 32)
+	if perr != nil {
+		return req, helpers.BadRequest("Invalid trader_id: " + perr.Error())
+	}
+	req.TraderId = uint32(traderIdUint)
 	return req, nil
 }

@@ -16,6 +16,7 @@ type TransactionController interface {
 	Transfercards(*gin.Context)
 	Exchange(*gin.Context)
 	GetTransactions(*gin.Context)
+	GetPossibleExchange(*gin.Context)
 }
 
 func NewTransactionController(transactionService service.TransactionService) TransactionController {
@@ -110,5 +111,27 @@ func (ctl *transactionController) GetTransactions(c *gin.Context) {
 	c.JSON(200, constants.JsonResp{
 		Data:    resp.Transactions,
 		Message: "Transactions fetched successfully",
+	})
+}
+
+func (ctl *transactionController) GetPossibleExchange(c *gin.Context) {
+	req, err := mapper.DecodeGetPossibleExchangeRequest(c)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	ctx := c.Request.Context()
+	resp, err := ctl.transactionService.GetPossibleExchange(ctx, req)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	c.JSON(200, constants.JsonResp{
+		Data:    resp,
+		Message: "Possible exchanges fetched successfully",
 	})
 }

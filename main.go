@@ -36,27 +36,31 @@ func main() {
 	cardTransactionDb := database.MongoClient.Database(dbName).Collection("card_transactions")
 	cashTransactionDb := database.MongoClient.Database(dbName).Collection("cash_transactions")
 
-	// Setup dependency injection for user
-	userRepo := models.NewUserRepository(usersDb)
-	userService := services.NewUserService(userRepo)
-	userController := controllers.NewUserController(userService)
-
 	cardRepo := models.NewCardRepository(cardDb)
-	cardService := services.NewCardService(cardRepo, userRepo)
-	cardController := controllers.NewCardController(cardService)
-
+	userRepo := models.NewUserRepository(usersDb)
 	loanRepo := models.NewLoanRepository(loanDb)
-	loanService := services.NewLoanService(loanRepo)
-	loanController := controllers.NewLoanController(loanService)
-
 	cardTransactionRepo := models.NewCardTransactionRepository(cardTransactionDb)
 	cashTransactionRepo := models.NewCashTransactionRepository(cashTransactionDb)
+
+	userService := services.NewUserService(userRepo, cardRepo)
+	cardService := services.NewCardService(cardRepo, userRepo)
+	loanService := services.NewLoanService(loanRepo)
 	transactionService := services.NewTransactionService(cardTransactionRepo, cashTransactionRepo, userRepo, cardRepo)
+
+	userController := controllers.NewUserController(userService)
+	cardController := controllers.NewCardController(cardService)
+	loanController := controllers.NewLoanController(loanService)
 	transactionController := controllers.NewTransactionController(transactionService)
 
 	// Setup Gin and routes
 	router := gin.Default()
-	router.Use(cors.Default())
+	router.Use(cors.New(cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"*"},
+		ExposeHeaders:    []string{"*"},
+		AllowCredentials: true,
+	}))
 	routes.SetupRoutes(router, userController, cardController, loanController, transactionController)
 
 	// Start server

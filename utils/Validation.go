@@ -278,3 +278,16 @@ func ValidateExchangeRequest(req dto.ExchangeRequest) (err *helpers.CustomError)
 	}
 	return nil
 }
+
+func ValidateGetPossibleExchangeRequest(req dto.GetPossibleExchangeRequest) (err *helpers.CustomError) {
+	if req.UserId == 0 {
+		return helpers.BadRequest("user ID is required")
+	}
+	if req.TraderId == 0 {
+		return helpers.BadRequest("trader ID is required")
+	}
+	if req.UserId == req.TraderId {
+		return helpers.BadRequest("user ID and trader ID cannot be the same")
+	}
+	return nil
+}

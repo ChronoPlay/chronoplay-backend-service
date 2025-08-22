@@ -67,25 +67,28 @@ func DecodeLoginUserRequest(r *gin.Context) (req dto.LoginUserRequest, err *help
 	return req, nil
 }
 
-func EncodeGetUserResponse(req *model.User) dto.GetUserResponse {
-	return dto.GetUserResponse{
-		Email:       req.Email,
-		Name:        req.Name,
-		UserName:    req.UserName,
-		Cash:        req.Cash,
-		FriendIds:   req.Friends,
-		UserType:    req.UserType,
-		PhoneNumber: req.PhoneNumber,
-		Cards:       req.Cards,
+func MapCardsToResponse(cards []model.Card) []dto.CardResponse {
+	var cardResponses []dto.CardResponse
+	for _, card := range cards {
+		cardResponses = append(cardResponses, dto.CardResponse{
+			Number:      card.Number,
+			Occupied:    card.Occupied,
+			Image:       card.ImageUrl,
+			Description: card.Description,
+			Rarity:      card.Rarity,
+			Name:        card.Name,
+		})
 	}
+	return cardResponses
 }
 
-func EncodeGetUserByIdResponse(req *model.User) (res dto.GetUserByIdResponse) {
+func EncodeGetUserByIdResponse(req dto.GetUserResponse) (res dto.GetUserByIdResponse) {
 	res.Email = req.Email
 	res.Name = req.Name
 	res.UserName = req.UserName
 	res.Cash = req.Cash
 	res.UserType = req.UserType
+	res.Cards = req.Cards
 	return res
 }
 

@@ -1,11 +1,13 @@
 package dto
 
-import "github.com/ChronoPlay/chronoplay-backend-service/model"
-
 type EmailVerificationRequest struct {
 	Email    string
 	UserName string
 	Link     string
+}
+
+type GetUserRequest struct {
+	UserID uint32 `bson:"user_id" json:"user_id"`
 }
 
 type VerifyUserRequest struct {
@@ -24,22 +26,32 @@ type LoginUserResponse struct {
 }
 
 type GetUserResponse struct {
-	Name        string               `json:"name"`
-	Email       string               `json:"email"`
-	UserName    string               `json:"user_name"`
-	Cash        float32              `json:"cash"`
-	FriendIds   []uint32             `json:"friend_ids"`
-	PhoneNumber string               `bson:"phone_number" json:"phone_number"`
-	Cards       []model.CardOccupied `bson:"cards" json:"cards"`
-	UserType    string               `json:"user_type"`
+	Name        string         `json:"name"`
+	Email       string         `json:"email"`
+	UserName    string         `json:"user_name"`
+	Cash        float32        `json:"cash"`
+	FriendIds   []uint32       `json:"friend_ids"`
+	PhoneNumber string         `bson:"phone_number" json:"phone_number"`
+	Cards       []CardResponse `bson:"cards" json:"cards"`
+	UserType    string         `json:"user_type"`
+}
+
+type CardResponse struct {
+	Number      string ` json:"number"`
+	Occupied    uint32 ` json:"occupied"`
+	Image       string ` json:"image"`
+	Description string ` json:"description"`
+	Rarity      string ` json:"rarity"`
+	Name        string ` json:"name"`
 }
 
 type GetUserByIdResponse struct {
-	Name     string  `json:"name"`
-	Email    string  `json:"email"`
-	UserName string  `json:"user_name"`
-	Cash     float32 `json:"cash"`
-	UserType string  `json:"user_type"`
+	Name     string         `json:"name"`
+	Email    string         `json:"email"`
+	UserName string         `json:"user_name"`
+	Cash     float32        `json:"cash"`
+	UserType string         `json:"user_type"`
+	Cards    []CardResponse `json:"cards"`
 }
 
 type AddFriendRequest struct {
