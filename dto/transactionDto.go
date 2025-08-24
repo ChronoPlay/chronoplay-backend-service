@@ -57,7 +57,8 @@ type ExchangeRequest struct {
 }
 
 type GetTransactionsRequest struct {
-	UserId uint32 `json:"user_id"`
+	UserId           uint32   `json:"user_id"`
+	TransactionGuids []uint32 `json:"transaction_guids"`
 }
 
 type GetTransactionsResponse struct {
@@ -97,4 +98,17 @@ type GetPossibleExchangeResponse struct {
 	YourCards   []CardResponse `json:"yourCards"`
 	TraderCash  float32        `json:"traderCash"`
 	TraderCards []CardResponse `json:"traderCards"`
+}
+
+type ExecuteExchangeRequest struct {
+	TransactionGuid uint32 `json:"transaction_guid"`
+	UserId          uint32 `json:"user_id"`
+	IsAccepted      bool   `json:"is_accepted"`
+}
+
+type IsvalidTransactionConfirmerRequest struct {
+	UserId    uint32
+	CreatedBy uint32
+	GivenBy   uint32
+	GivenTo   uint32
 }

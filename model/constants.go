@@ -8,6 +8,7 @@ const (
 const (
 	TRANSACTION_STATUS_PENDING = "pending"
 	TRANSACTION_STATUS_SUCCESS = "success"
+	TRANSACTION_STATUS_FAILED  = "failed"
 )
 
 var ValidTransactionStatuses = []string{

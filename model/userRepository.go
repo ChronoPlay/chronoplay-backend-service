@@ -84,6 +84,7 @@ func (r *mongoUserRepo) GetCollection() *mongo.Collection {
 }
 
 func (r *mongoUserRepo) UpdateUser(ctx context.Context, user User) *helpers.CustomError {
+	log.Println("Updating user:", user)
 	user.UpdatedAt = time.Now()
 
 	// Convert struct to bson.M

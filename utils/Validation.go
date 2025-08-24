@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -288,6 +289,27 @@ func ValidateGetPossibleExchangeRequest(req dto.GetPossibleExchangeRequest) (err
 	}
 	if req.UserId == req.TraderId {
 		return helpers.BadRequest("user ID and trader ID cannot be the same")
+	}
+	return nil
+}
+
+func ValidateExecuteExchangeRequest(req dto.ExecuteExchangeRequest) (err *helpers.CustomError) {
+	if req.UserId == 0 {
+		return helpers.BadRequest("user ID is required")
+	}
+	if req.TransactionGuid == 0 {
+		return helpers.BadRequest("transaction ID is required")
+	}
+	return nil
+}
+
+func IsValidTransactionConfirmer(req dto.IsvalidTransactionConfirmerRequest) (err *helpers.CustomError) {
+	log.Printf("Validating transaction confirmer: %+v\n", req)
+	if req.UserId != req.GivenBy && req.UserId != req.GivenTo {
+		return helpers.BadRequest("user ID must be either the giver or receiver")
+	}
+	if req.UserId == req.CreatedBy {
+		return helpers.BadRequest("creator of transaction cannot confirm it")
 	}
 	return nil
 }
