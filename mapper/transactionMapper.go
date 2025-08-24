@@ -33,14 +33,13 @@ func DecodeGetTransactionsRequest(c *gin.Context) (dto.GetTransactionsRequest, *
 	userId, _ := c.Get("UserID")
 	req.UserId = userId.(uint32)
 	transactionGuid, exists := c.GetQuery("transaction_guid")
-	if !exists {
-		return req, helpers.BadRequest("Missing transaction_guid in query parameters")
+	if exists {
+		transactionGuidUint, perr := strconv.ParseUint(transactionGuid, 10, 32)
+		if perr != nil {
+			return req, helpers.BadRequest("Invalid transaction_guid: " + perr.Error())
+		}
+		req.TransactionGuids = []uint32{uint32(transactionGuidUint)}
 	}
-	transactionGuidUint, perr := strconv.ParseUint(transactionGuid, 10, 32)
-	if perr != nil {
-		return req, helpers.BadRequest("Invalid transaction_guid: " + perr.Error())
-	}
-	req.TransactionGuids = []uint32{uint32(transactionGuidUint)}
 	return req, nil
 }
 

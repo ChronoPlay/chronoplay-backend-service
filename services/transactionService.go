@@ -27,14 +27,16 @@ type transactionService struct {
 	cashTransactionRepo model.CashTransactionRepository
 	userRepo            model.UserRepository
 	cardRepo            model.CardRepository
+	notificationService NotificationService
 }
 
-func NewTransactionService(cardTransactionRepo model.CardTransactionRepository, cashTransactionRepo model.CashTransactionRepository, userRepo model.UserRepository, cardRepo model.CardRepository) TransactionService {
+func NewTransactionService(cardTransactionRepo model.CardTransactionRepository, cashTransactionRepo model.CashTransactionRepository, userRepo model.UserRepository, cardRepo model.CardRepository, notificationService NotificationService) TransactionService {
 	return &transactionService{
 		cardTransactionRepo: cardTransactionRepo,
 		cashTransactionRepo: cashTransactionRepo,
 		userRepo:            userRepo,
 		cardRepo:            cardRepo,
+		notificationService: notificationService,
 	}
 }
 
@@ -947,6 +949,14 @@ func (s *transactionService) ExecuteExchange(ctx context.Context, req dto.Execut
 			return err
 		}
 		err = s.userRepo.UpdateUser(ctx, trader)
+		if err != nil {
+			return err
+		}
+		err = s.notificationService.SendNotification(ctx, dto.SendNotificationRequest{
+			UserIds: []uint32{trader.UserId, user.UserId},
+			Title:   "Exchange Successful",
+			Message: "Your exchange with user " + user.Name + " was successful.",
+		})
 		if err != nil {
 			return err
 		}
