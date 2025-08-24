@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
@@ -21,6 +22,8 @@ type CardTransaction struct {
 	Status          string             `bson:"status" json:"status"`
 	CreatedAt       primitive.DateTime `bson:"created_at" json:"created_at"`
 	CreatedBy       uint32             `bson:"created_by" json:"created_by"`
+	UpdatedAt       primitive.DateTime `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
+	UpdatedBy       uint32             `bson:"updated_by,omitempty" json:"updated_by,omitempty"`
 }
 
 type CardTransactionRepository interface {
@@ -31,6 +34,7 @@ type CardTransactionRepository interface {
 	GetCardTransactionsByUserId(ctx context.Context, userId uint32) ([]CardTransaction, *helpers.CustomError)
 	GetCardTransactionsToUserId(ctx context.Context, userId uint32) ([]CardTransaction, *helpers.CustomError)
 	GetCardTransactionsByTransactionGuid(ctx context.Context, transactionGuid uint32) ([]CardTransaction, *helpers.CustomError)
+	UpdateCardTransactions(ctx context.Context, transactions []CardTransaction) *helpers.CustomError
 }
 
 type mongoCardTransactionRepo struct {
@@ -67,6 +71,8 @@ func (repo *mongoCardTransactionRepo) AddCardTransaction(ctx context.Context, tr
 }
 
 func (repo *mongoCardTransactionRepo) AddCardTransactions(ctx context.Context, transactions []CardTransaction) (guid uint32, herr *helpers.CustomError) {
+	log.Printf("Adding %d card transactions\n", len(transactions))
+	log.Printf("Card transactions details: %+v\n", transactions)
 	if len(transactions) == 0 {
 		return 0, helpers.BadRequest("No transactions to add")
 	}
@@ -189,4 +195,29 @@ func (repo *mongoCardTransactionRepo) GetCardTransactionsByTransactionGuid(ctx c
 	}
 
 	return transactions, nil
+}
+
+func (repo *mongoCardTransactionRepo) UpdateCardTransactions(ctx context.Context, transactions []CardTransaction) *helpers.CustomError {
+	for _, transaction := range transactions {
+		filter := bson.M{"transaction_id": transaction.TransactionId}
+		update := bson.M{
+			"$set": bson.M{
+				"amount":           transaction.Amount,
+				"card_number":      transaction.CardNumber,
+				"given_by":         transaction.GivenBy,
+				"given_to":         transaction.GivenTo,
+				"status":           transaction.Status,
+				"created_at":       transaction.CreatedAt,
+				"created_by":       transaction.CreatedBy,
+				"transaction_guid": transaction.TransactionGuid,
+				"updated_at":       primitive.NewDateTimeFromTime(time.Now()),
+				"updated_by":       transaction.UpdatedBy,
+			},
+		}
+		_, err := repo.collection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			return helpers.System("Failed to update card transaction ID " + string(transaction.TransactionId) + ": " + err.Error())
+		}
+	}
+	return nil
 }

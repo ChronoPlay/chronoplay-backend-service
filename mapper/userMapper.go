@@ -67,12 +67,12 @@ func DecodeLoginUserRequest(r *gin.Context) (req dto.LoginUserRequest, err *help
 	return req, nil
 }
 
-func MapCardsToResponse(cards []model.Card) []dto.CardResponse {
+func MapCardsToResponse(cards []model.Card, occupiedMap map[string]uint32) []dto.CardResponse {
 	var cardResponses []dto.CardResponse
 	for _, card := range cards {
 		cardResponses = append(cardResponses, dto.CardResponse{
 			Number:      card.Number,
-			Occupied:    card.Occupied,
+			Occupied:    occupiedMap[card.Number],
 			Image:       card.ImageUrl,
 			Description: card.Description,
 			Rarity:      card.Rarity,

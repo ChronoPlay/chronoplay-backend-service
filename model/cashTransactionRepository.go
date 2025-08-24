@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
@@ -20,6 +21,8 @@ type CashTransaction struct {
 	Status          string             `bson:"status" json:"status"`
 	CreatedAt       primitive.DateTime `bson:"created_at" json:"created_at"`
 	CreatedBy       uint32             `bson:"created_by" json:"created_by"`
+	UpdatedBy       uint32             `bson:"updated_by,omitempty" json:"updated_by,omitempty"`
+	UpdatedAt       primitive.DateTime `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
 }
 
 type CashTransactionRepository interface {
@@ -29,6 +32,7 @@ type CashTransactionRepository interface {
 	GetCashTransactionsToUserId(ctx context.Context, userId uint32) ([]CashTransaction, *helpers.CustomError)
 	GetCashTransactionsByTransactionId(ctx context.Context, transactionId uint32) ([]CashTransaction, *helpers.CustomError)
 	GetCashTransactionsByTransactionGuid(ctx context.Context, transactionGuid uint32) ([]CashTransaction, *helpers.CustomError)
+	UpdateCashTransactions(ctx context.Context, transactions []CashTransaction) *helpers.CustomError
 }
 
 type mongoCashTransactionRepo struct {
@@ -51,6 +55,7 @@ func (repo *mongoCashTransactionRepo) AddCashTransaction(ctx context.Context, tr
 		}
 		transaction.TransactionGuid = uint32(nextGuid)
 	}
+	log.Printf("Generated Transaction GUID: %d\n", transaction.TransactionGuid)
 	nextId, err := GetNextSequence(ctx, repo.collection.Database(), "cashTransactions")
 	if err != nil {
 		return 0, helpers.System("Failed to generate transaction ID: " + err.Error())
@@ -154,4 +159,26 @@ func (repo *mongoCashTransactionRepo) GetCashTransactionsByTransactionGuid(ctx c
 	}
 
 	return transactions, nil
+}
+
+func (repo *mongoCashTransactionRepo) UpdateCashTransactions(ctx context.Context, transactions []CashTransaction) *helpers.CustomError {
+	for _, transaction := range transactions {
+		filter := bson.M{"transaction_id": transaction.TransactionId}
+		update := bson.M{
+			"$set": bson.M{
+				"amount":           transaction.Amount,
+				"given_by":         transaction.GivenBy,
+				"given_to":         transaction.GivenTo,
+				"status":           transaction.Status,
+				"updated_at":       primitive.NewDateTimeFromTime(time.Now()),
+				"updated_by":       transaction.UpdatedBy,
+				"transaction_guid": transaction.TransactionGuid,
+			},
+		}
+		_, err := repo.collection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			return helpers.System("Failed to update cash transaction: " + err.Error())
+		}
+	}
+	return nil
 }

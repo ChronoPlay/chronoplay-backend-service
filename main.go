@@ -35,18 +35,22 @@ func main() {
 	loanDb := database.MongoClient.Database(dbName).Collection("loans")
 	cardTransactionDb := database.MongoClient.Database(dbName).Collection("card_transactions")
 	cashTransactionDb := database.MongoClient.Database(dbName).Collection("cash_transactions")
+	notificationDb := database.MongoClient.Database(dbName).Collection("notifications")
 
 	cardRepo := models.NewCardRepository(cardDb)
 	userRepo := models.NewUserRepository(usersDb)
 	loanRepo := models.NewLoanRepository(loanDb)
 	cardTransactionRepo := models.NewCardTransactionRepository(cardTransactionDb)
 	cashTransactionRepo := models.NewCashTransactionRepository(cashTransactionDb)
+	notificationRepo := models.NewNotificationRepository(notificationDb)
 
+	notificationService := services.NewNotificationService(notificationRepo)
 	userService := services.NewUserService(userRepo, cardRepo)
 	cardService := services.NewCardService(cardRepo, userRepo)
 	loanService := services.NewLoanService(loanRepo)
-	transactionService := services.NewTransactionService(cardTransactionRepo, cashTransactionRepo, userRepo, cardRepo)
+	transactionService := services.NewTransactionService(cardTransactionRepo, cashTransactionRepo, userRepo, cardRepo, notificationService)
 
+	notificationController := controllers.NewNotificationController(notificationService)
 	userController := controllers.NewUserController(userService)
 	cardController := controllers.NewCardController(cardService)
 	loanController := controllers.NewLoanController(loanService)
@@ -61,7 +65,7 @@ func main() {
 		ExposeHeaders:    []string{"*"},
 		AllowCredentials: true,
 	}))
-	routes.SetupRoutes(router, userController, cardController, loanController, transactionController)
+	routes.SetupRoutes(router, userController, cardController, loanController, transactionController, notificationController)
 
 	// Start server
 	port := os.Getenv("PORT")

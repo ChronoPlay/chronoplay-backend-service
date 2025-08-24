@@ -47,8 +47,10 @@ func (s *userService) GetUser(ctx context.Context, req dto.GetUserRequest) (resp
 		return dto.GetUserResponse{}, helpers.NotFound("User not found")
 	}
 	cardNumbers := []string{}
+	curUserCardOccupiedMap := make(map[string]uint32)
 	for _, card := range users[0].Cards {
 		cardNumbers = append(cardNumbers, card.CardNumber)
+		curUserCardOccupiedMap[card.CardNumber] = card.Occupied
 	}
 	cards, err := s.cardRepo.GetCards(ctx, model.GetCardsRequest{Numbers: cardNumbers})
 	if err != nil {
@@ -62,7 +64,7 @@ func (s *userService) GetUser(ctx context.Context, req dto.GetUserRequest) (resp
 		Cash:        users[0].Cash,
 		FriendIds:   users[0].Friends,
 		PhoneNumber: users[0].PhoneNumber,
-		Cards:       mapper.MapCardsToResponse(cards),
+		Cards:       mapper.MapCardsToResponse(cards, curUserCardOccupiedMap),
 		UserType:    users[0].UserType,
 	}, nil
 }
