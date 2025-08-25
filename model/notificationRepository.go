@@ -2,6 +2,8 @@ package model
 
 import (
 	"context"
+	"sort"
+	"time"
 
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,6 +19,8 @@ type Notification struct {
 	Message        string               `bson:"message" json:"message"`
 	Read           bool                 `bson:"read" json:"read"`
 	Category       NotificationCategory `bson:"category" json:"category"`
+	CreatedAt      primitive.DateTime   `bson:"created_at" json:"created_at"`
+	UpdatedAt      primitive.DateTime   `bson:"updated_at" json:"updated_at"`
 }
 
 type NotificationCategory string
@@ -61,6 +65,8 @@ func (repo *mongoNotificationRepo) AddNotifications(ctx context.Context, notific
 	}
 	docs := make([]interface{}, len(notifications))
 	for i := range notifications {
+		notifications[i].CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+		notifications[i].UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 		docs[i] = notifications[i]
 	}
 
@@ -80,6 +86,10 @@ func (repo *mongoNotificationRepo) GetNotificationsByUserId(ctx context.Context,
 	if err = cursor.All(ctx, &notifications); err != nil {
 		return nil, helpers.System("Failed to decode notifications: " + err.Error())
 	}
+	// sort decending by CreatedAt
+	sort.Slice(notifications, func(i, j int) bool {
+		return notifications[i].CreatedAt.Time().After(notifications[j].CreatedAt.Time())
+	})
 	return notifications, nil
 }
 
@@ -91,7 +101,7 @@ func (repo *mongoNotificationRepo) MarkNotificationsAsRead(ctx context.Context, 
 		filter = bson.M{"user_id": userId, "notification_id": bson.M{"$in": notificationIds}, "read": false}
 	}
 	update := bson.M{
-		"$set": bson.M{"read": true},
+		"$set": bson.M{"read": true, "updated_at": primitive.NewDateTimeFromTime(time.Now())},
 	}
 	_, err := repo.collection.UpdateMany(ctx, filter, update)
 	if err != nil {
