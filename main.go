@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 
 	controllers "github.com/ChronoPlay/chronoplay-backend-service/controllers"
+	"github.com/ChronoPlay/chronoplay-backend-service/crons"
 	"github.com/ChronoPlay/chronoplay-backend-service/database"
 	models "github.com/ChronoPlay/chronoplay-backend-service/model"
 	"github.com/ChronoPlay/chronoplay-backend-service/routes"
@@ -66,6 +67,9 @@ func main() {
 		AllowCredentials: true,
 	}))
 	routes.SetupRoutes(router, userController, cardController, loanController, transactionController, notificationController)
+
+	// start all cron jobs
+	crons.RunAllCrons()
 
 	// Start server
 	port := os.Getenv("PORT")
