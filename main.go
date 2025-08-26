@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -59,26 +60,24 @@ func main() {
 
 	// Setup Gin and routes
 	router := gin.Default()
-	router.Use(cors.New(cors.Config{
+
+	// ✅ Proper CORS config with Access-Control-Allow-Origin
+	config := cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:3000",
 			"http://localhost:3001",
 			"https://chronoplay-frontend.onrender.com",
 		},
-		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders: []string{
-			"Origin",
-			"Content-Type",
-			"Accept",
-			"Authorization",
-		},
-		ExposeHeaders: []string{
-			"Content-Length",
-			"Content-Type",
-		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
 		AllowCredentials: true,
-	}))
+		MaxAge:           12 * time.Hour,
+	}
 
+	router.Use(cors.New(config))
+
+	// Handle routes
 	routes.SetupRoutes(router, userController, cardController, loanController, transactionController, notificationController)
 
 	// start all cron jobs
