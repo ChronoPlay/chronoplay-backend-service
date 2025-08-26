@@ -60,7 +60,10 @@ func main() {
 	// Setup Gin and routes
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
-		AllowAllOrigins:  true,
+		AllowOrigins: []string{
+			"http://localhost:3000",
+			"https://chronoplay-frontend.onrender.com",
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"*"},
 		ExposeHeaders:    []string{"*"},
