@@ -6,12 +6,14 @@ import (
 	"github.com/ChronoPlay/chronoplay-backend-service/dto"
 	"github.com/ChronoPlay/chronoplay-backend-service/helpers"
 	model "github.com/ChronoPlay/chronoplay-backend-service/model"
+	"github.com/ChronoPlay/chronoplay-backend-service/utils"
 )
 
 type NotificationService interface {
 	SendNotification(ctx context.Context, req dto.SendNotificationRequest) *helpers.CustomError
 	MarkNotificationsAsRead(ctx context.Context, req dto.MarkNotificationsAsReadRequest) *helpers.CustomError
 	GetNotifications(ctx context.Context, req dto.GetNotificationsRequest) ([]model.Notification, *helpers.CustomError)
+	SendDeactivationEmail(ctx context.Context, req dto.SendDeactivationEmailRequest) *helpers.CustomError
 }
 
 type notificationService struct {
@@ -66,4 +68,15 @@ func (s *notificationService) GetNotifications(ctx context.Context, req dto.GetN
 		return nil, err
 	}
 	return notifications, nil
+}
+
+func (s *notificationService) SendDeactivationEmail(ctx context.Context, req dto.SendDeactivationEmailRequest) *helpers.CustomError {
+	body := "Dear User,\n\nYou have been Terminated due to insufficient funds for survival tonight. If this is a mistake, please contact support.\n\nBest regards,\nChronoPlay Team"
+	err := utils.SendEmail(req.Emails,
+		"Survival Failure - Account Deactivation",
+		body)
+	if err != nil {
+		return helpers.System("Failed to send deactivation email: " + err.Error())
+	}
+	return nil
 }

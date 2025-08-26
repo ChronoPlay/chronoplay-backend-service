@@ -3,17 +3,35 @@ package crons
 import (
 	"log"
 
+	service "github.com/ChronoPlay/chronoplay-backend-service/services"
 	"github.com/robfig/cron/v3"
 )
 
-func RunAllCrons() {
+type cronController struct {
+	userService         service.UserService
+	notificationService service.NotificationService
+	cronEnabled         bool
+}
 
+type CronController interface {
+	RunAllCrons()
+}
+
+func NewCronController(userService service.UserService, notificationService service.NotificationService, cronEnabled bool) CronController {
+	return &cronController{
+		userService:         userService,
+		notificationService: notificationService,
+		cronEnabled:         cronEnabled,
+	}
+}
+
+func (ctl *cronController) RunAllCrons() {
 	// register survival tax cron
 	c := cron.New()
 
 	// Register jobs here
-	log.Printf("Registering survival tax cron to run every 3 seconds")
-	_, err := c.AddFunc("@every 3s", SurvivalTaxTask)
+	log.Printf("Registering survival tax cron to run every day at midnight")
+	_, err := c.AddFunc("0 0 * * *", ctl.SurvivalTaxTask)
 	if err != nil {
 		log.Printf("Error registering survival tax cron: %v", err)
 	}

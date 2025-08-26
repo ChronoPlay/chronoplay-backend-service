@@ -17,6 +17,7 @@ func SetupRoutes(r *gin.Engine, userController controller.UserController, cardCo
 		auth.POST("/signup", userController.RegisterUser)
 		auth.GET("/verify", userController.VerifyUser)
 		auth.POST("/login", userController.LoginUser)
+		auth.PATCH("/activate_all_users", userController.ActivateAllUsers)
 	}
 
 	user := r.Group("/user", middleware.AuthorizeUser(), middleware.CustomContextMiddleware())

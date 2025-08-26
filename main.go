@@ -69,7 +69,9 @@ func main() {
 	routes.SetupRoutes(router, userController, cardController, loanController, transactionController, notificationController)
 
 	// start all cron jobs
-	crons.RunAllCrons()
+	cronsEnabled := os.Getenv("CRON_ENABLED") == "true"
+	cronController := crons.NewCronController(userService, notificationService, cronsEnabled)
+	cronController.RunAllCrons()
 
 	// Start server
 	port := os.Getenv("PORT")
