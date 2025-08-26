@@ -65,11 +65,20 @@ func main() {
 			"http://localhost:3001",
 			"https://chronoplay-frontend.onrender.com",
 		},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"*"},
-		ExposeHeaders:    []string{"*"},
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{
+			"Origin",
+			"Content-Type",
+			"Accept",
+			"Authorization",
+		},
+		ExposeHeaders: []string{
+			"Content-Length",
+			"Content-Type",
+		},
 		AllowCredentials: true,
 	}))
+
 	routes.SetupRoutes(router, userController, cardController, loanController, transactionController, notificationController)
 
 	// start all cron jobs
