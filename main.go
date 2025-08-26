@@ -62,6 +62,7 @@ func main() {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:3000",
+			"http://localhost:3001",
 			"https://chronoplay-frontend.onrender.com",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
