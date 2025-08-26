@@ -27,6 +27,7 @@ type User struct {
 	UpdatedAt    time.Time          `bson:"updated_at" json:"updated_at"`
 	Cards        []CardOccupied     `bson:"cards" json:"cards"`
 	Friends      []uint32           `bson:"friends" json:"friends"`
+	Deactivated  bool               `bson:"deactivated" json:"deactivated"`
 }
 
 type CardOccupied struct {
@@ -151,6 +152,18 @@ func (r *mongoUserRepo) GetUsers(ctx context.Context, req User) ([]User, *helper
 	if req.PhoneNumber != "" {
 		conditions = append(conditions, bson.M{
 			"phone_number": req.PhoneNumber,
+		})
+		isValid = true
+	}
+	if req.IsAuthorized {
+		conditions = append(conditions, bson.M{
+			"is_authorized": req.IsAuthorized,
+		})
+		isValid = true
+	}
+	if req.Deactivated {
+		conditions = append(conditions, bson.M{
+			"deactivated": req.Deactivated,
 		})
 		isValid = true
 	}

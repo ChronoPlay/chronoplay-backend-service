@@ -22,6 +22,9 @@ type UserService interface {
 	AddFriend(ctx context.Context, req *dto.AddFriendRequest) *helpers.CustomError
 	GetFriends(ctx context.Context, req *dto.GetFriendsRequest) ([]dto.Friend, *helpers.CustomError)
 	RemoveFriend(ctx context.Context, req *dto.AddFriendRequest) *helpers.CustomError
+	GetAllActiveUsers() ([]model.User, *helpers.CustomError)
+	UpdateUser(ctx context.Context, req model.User) *helpers.CustomError
+	ActivateAllUsers(ctx context.Context) *helpers.CustomError
 }
 
 type userService struct {
@@ -334,6 +337,42 @@ func (s *userService) RemoveFriend(ctx context.Context, req *dto.AddFriendReques
 	ferr = s.userRepo.UpdateUser(ctx, curUser)
 	if ferr != nil {
 		return ferr
+	}
+	return nil
+}
+
+func (s *userService) GetAllActiveUsers() ([]model.User, *helpers.CustomError) {
+	users, err := s.userRepo.GetUsers(context.Background(), model.User{
+		IsAuthorized: true,
+		Deactivated:  false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (s *userService) UpdateUser(ctx context.Context, req model.User) *helpers.CustomError {
+	err := s.userRepo.UpdateUser(ctx, req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *userService) ActivateAllUsers(ctx context.Context) *helpers.CustomError {
+	users, err := s.userRepo.GetUsers(ctx, model.User{
+		Deactivated: true,
+	})
+	if err != nil {
+		return err
+	}
+	for _, user := range users {
+		user.Deactivated = false
+		err := s.userRepo.UpdateUser(ctx, user)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

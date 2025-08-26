@@ -27,6 +27,7 @@ type UserController interface {
 	AddFriend(*gin.Context)
 	GetFriends(c *gin.Context)
 	RemoveFriend(c *gin.Context)
+	ActivateAllUsers(c *gin.Context)
 }
 
 func NewUserController(userService service.UserService) UserController {
@@ -220,4 +221,18 @@ func (ctl *userController) RemoveFriend(c *gin.Context) {
 		Message: "friend removed succesfully",
 	})
 
+}
+
+func (ctl *userController) ActivateAllUsers(c *gin.Context) {
+	ctx := c.Request.Context()
+	err := ctl.userService.ActivateAllUsers(ctx)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, constants.JsonResp{
+		Message: "All users activated successfully",
+	})
 }

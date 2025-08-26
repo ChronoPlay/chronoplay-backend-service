@@ -112,3 +112,8 @@ type IsvalidTransactionConfirmerRequest struct {
 	GivenBy   uint32
 	GivenTo   uint32
 }
+
+type DeduceSurvivalTaxAmountRequest struct {
+	UserId uint32
+	Amount float32
+}

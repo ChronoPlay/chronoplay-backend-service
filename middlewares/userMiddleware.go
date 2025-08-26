@@ -77,3 +77,26 @@ func (mw userMiddleware) RemoveFriend(ctx context.Context, req *dto.AddFriendReq
 
 	return mw.next.RemoveFriend(ctx, req)
 }
+
+func (mw userMiddleware) GetAllActiveUsers() (users []model.User, err *helpers.CustomError) {
+	defer func(begin time.Time) {
+		log.Printf(" method: GetAllActiveUsers took: %s err: %v",
+			time.Since(begin), err)
+	}(time.Now())
+
+	return mw.next.GetAllActiveUsers()
+}
+
+func (mw userMiddleware) UpdateUser(ctx context.Context, user model.User) (err *helpers.CustomError) {
+	defer func(begin time.Time) {
+		log.Printf("ctx:", ctx, " method:", "UpdateUser", " req:", user, " took:", time.Since(begin), " err:", err)
+	}(time.Now())
+	return mw.next.UpdateUser(ctx, user)
+}
+
+func (mw userMiddleware) ActivateAllUsers(ctx context.Context) (err *helpers.CustomError) {
+	defer func(begin time.Time) {
+		log.Printf("ctx:", ctx, " method:", "ActivateAllUsers", " took:", time.Since(begin), " err:", err)
+	}(time.Now())
+	return mw.next.ActivateAllUsers(ctx)
+}

@@ -15,3 +15,7 @@ type SendNotificationRequest struct {
 type GetNotificationsRequest struct {
 	UserId uint32 `json:"user_id"`
 }
+
+type SendDeactivationEmailRequest struct {
+	Emails []string `json:"email"`
+}
