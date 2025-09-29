@@ -66,7 +66,7 @@ func main() {
 		AllowOrigins: []string{
 			"http://localhost:3000",
 			"http://localhost:3001",
-			"https://chronoplay-frontend.onrender.com",
+			"https://chronoplay.onrender.com",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
