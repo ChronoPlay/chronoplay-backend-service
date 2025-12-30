@@ -2,3 +2,5 @@
 /vendor
 
 .env
+
+/Docs/google-auth.md

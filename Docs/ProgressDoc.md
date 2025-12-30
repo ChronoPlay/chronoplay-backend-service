@@ -49,6 +49,11 @@
 2. fixed login pages
 3. added verifications in signup flow
 
-## 15 Aug
+## 13 Dec
 
-1. 
+### Target
+
+1. Create one game and add that to dashboard in chronoplay
+    - add logics for gaining coins, win and all
+2. Create microservice for ai calls (if needed) and integrate that to chronoplay
+    - need to figure out about microservice or direct calls from within project itself

@@ -75,3 +75,7 @@ type Friend struct {
 type GetFriendsResponse struct {
 	Friends []Friend `bson:"friends" json:"friends"`
 }
+
+type GoogleLoginRequest struct {
+	Token string `json:"token"`
+}

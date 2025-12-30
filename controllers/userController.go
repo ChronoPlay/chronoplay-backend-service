@@ -28,6 +28,7 @@ type UserController interface {
 	GetFriends(c *gin.Context)
 	RemoveFriend(c *gin.Context)
 	ActivateAllUsers(c *gin.Context)
+	GoogleLogin(*gin.Context)
 }
 
 func NewUserController(userService service.UserService) UserController {
@@ -234,5 +235,28 @@ func (ctl *userController) ActivateAllUsers(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, constants.JsonResp{
 		Message: "All users activated successfully",
+	})
+}
+
+func (ctl *userController) GoogleLogin(c *gin.Context) {
+	log.Printf("GoogleLogin request reached controller")
+	req, err := mapper.DecodeGoogleLoginRequest(c)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	ctx := c.Request.Context()
+	resp, err := ctl.userService.GoogleLogin(ctx, req)
+	if err != nil {
+		c.JSON(int(err.Code), constants.JsonResp{
+			Message: err.Message,
+		})
+		return
+	}
+	c.JSON(200, constants.JsonResp{
+		Data:    resp,
+		Message: "User logged in successfully via Google",
 	})
 }
