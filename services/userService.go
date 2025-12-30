@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -25,6 +26,7 @@ type UserService interface {
 	GetAllActiveUsers() ([]model.User, *helpers.CustomError)
 	UpdateUser(ctx context.Context, req model.User) *helpers.CustomError
 	ActivateAllUsers(ctx context.Context) *helpers.CustomError
+	GoogleLogin(ctx context.Context, req dto.GoogleLoginRequest) (dto.LoginUserResponse, *helpers.CustomError)
 }
 
 type userService struct {
@@ -375,4 +377,34 @@ func (s *userService) ActivateAllUsers(ctx context.Context) *helpers.CustomError
 		}
 	}
 	return nil
+}
+
+func (s *userService) GoogleLogin(ctx context.Context, req dto.GoogleLoginRequest) (dto.LoginUserResponse, *helpers.CustomError) {
+	payload, gerr := utils.VerifyGoogleIDToken(ctx, req.Token, os.Getenv("GOOGLE_CLIENT_ID"))
+	if gerr != nil {
+		return dto.LoginUserResponse{}, helpers.Unauthorized("Invalid Google ID token: " + gerr.Error())
+	}
+	if payload == nil || payload.Email == "" {
+		return dto.LoginUserResponse{}, helpers.Unauthorized("Invalid Google ID token: missing email in payload")
+	}
+	log.Printf("[DEBUG] payload from google token: %+v", payload)
+
+	users, err := s.userRepo.GetUsers(ctx, model.User{
+		Email: payload.Email,
+	})
+	if err != nil {
+		return dto.LoginUserResponse{}, helpers.System("Failed to fetch user: " + err.Error())
+	}
+	if len(users) == 0 {
+		return dto.LoginUserResponse{}, helpers.NotFound("No user found with the given Google account email")
+	}
+
+	jwtToken, err := utils.GenerateJwtToken(users[0].UserId)
+	if err != nil {
+		return dto.LoginUserResponse{}, helpers.System("Failed to generate JWT token: " + err.Error())
+	}
+
+	return dto.LoginUserResponse{
+		Token: jwtToken,
+	}, nil
 }

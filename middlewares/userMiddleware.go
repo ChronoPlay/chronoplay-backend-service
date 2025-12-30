@@ -106,3 +106,11 @@ func (mw userMiddleware) ActivateAllUsers(ctx context.Context) (err *helpers.Cus
 	}(time.Now())
 	return mw.next.ActivateAllUsers(ctx)
 }
+
+func (mw userMiddleware) GoogleLogin(ctx context.Context, req dto.GoogleLoginRequest) (resp dto.LoginUserResponse, err *helpers.CustomError) {
+	defer func(begin time.Time) {
+		log.Printf("ctx:%v method:%v req:%v took:%v err:%v resp:%v",
+			ctx, "GoogleLogin", req, time.Since(begin), err, resp)
+	}(time.Now())
+	return mw.next.GoogleLogin(ctx, req)
+}

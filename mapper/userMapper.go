@@ -108,3 +108,17 @@ func DecodeAddFriendRequest(curUserId interface{}, friendUserId string) (*dto.Ad
 		FriendID: uint32(fid),
 	}, nil
 }
+
+func DecodeGoogleLoginRequest(r *gin.Context) (req dto.GoogleLoginRequest, err *helpers.CustomError) {
+
+	if err := r.ShouldBindJSON(&req); err != nil {
+		return dto.GoogleLoginRequest{}, helpers.BadRequest("Invalid request: " + err.Error())
+	}
+
+	if req.Token == "" {
+		return dto.GoogleLoginRequest{}, helpers.BadRequest("Missing token in request body")
+	}
+
+	log.Println("[DEBUG] Parsed Google login request:", req)
+	return req, nil
+}

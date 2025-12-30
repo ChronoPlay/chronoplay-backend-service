@@ -35,6 +35,14 @@ type CardOccupied struct {
 	Occupied   uint32 `bson:"occupied" json:"occupied"`
 }
 
+type GooglePayload struct {
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"email_verified"`
+	Name          string `json:"name"`
+	Picture       string `json:"picture"`
+	Sub           string `json:"sub"`
+}
+
 type UserRepository interface {
 	FindByUserName(ctx context.Context, username string) (*User, *helpers.CustomError)
 	RegisterUser(sessCtx mongo.SessionContext, user User) (uint32, *helpers.CustomError)

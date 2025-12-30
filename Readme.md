@@ -5,7 +5,7 @@ A Go-based REST API for a virtual economy and card trading platform that combine
 ## 📚 Documentation
 
 - **[📋 Product Documentation](./Docs/ProductDoc.md)** - Business overview, features, target audience, and product roadmap
-- **[⚙️ Developer Documentation](./Docs/DevelopersDoc.md)** - Technical implementation, API endpoints, and development setup
+- **[⚙️ Developer Documentation](./Docs/DevelopersDoc.md)** - Technical implementation, API endpoints, and development setup 
 
 ## 🚀 Quick Start
 
